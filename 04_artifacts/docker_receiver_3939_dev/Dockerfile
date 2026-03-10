@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trus
 
 ENV RECEIVER_PORT=3939
 ENV API_REGION=cn
-ENV PUBLIC_HOST=39.97.43.115
+ENV PUBLIC_HOST=127.0.0.1
 ENV OUTPUT_ROOT=/data
 
 EXPOSE 3939

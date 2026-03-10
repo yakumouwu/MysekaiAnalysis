@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 
 PORT = 8000
-LOCAL_IP = '192.168.71.67'
+LOCAL_IP = '127.0.0.1'
 REGION = "cn"
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 RAW_BASE_DIR = os.path.join(ROOT_DIR, "02_captures", "raw_api")
