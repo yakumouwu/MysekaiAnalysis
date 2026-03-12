@@ -206,6 +206,24 @@ def render_suite_card(json_path, decoded_dir):
     return None, (proc.stderr or proc.stdout or "render_failed").strip()
 
 
+def render_mysekai_map(json_path, decoded_dir):
+    renderer = os.path.join(os.path.dirname(__file__), "render_mysekai_map.py")
+    assets_dir = os.path.join(os.path.dirname(__file__), "mysekai_assets")
+    if not os.path.exists(renderer):
+        return None, "renderer_not_found"
+    if not os.path.isdir(assets_dir):
+        return None, "assets_not_found"
+
+    map_dir = os.path.join(decoded_dir, "maps")
+    os.makedirs(map_dir, exist_ok=True)
+    map_path = os.path.join(map_dir, os.path.splitext(os.path.basename(json_path))[0] + ".png")
+    cmd = [sys.executable, renderer, json_path, map_path, assets_dir]
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if proc.returncode == 0 and os.path.exists(map_path):
+        return map_path, "ok"
+    return None, (proc.stderr or proc.stdout or "render_failed").strip()
+
+
 def is_mysekai_full_packet(json_data):
     return bool(json_data.get("updatedResources", {}).get("userMysekaiHarvestMaps"))
 
@@ -473,6 +491,13 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     logger.warning("Card render failed: %s", cstatus)
             elif api_type == "mysekai":
+                map_path, mstatus = render_mysekai_map(out_json, decoded_dir)
+                if mstatus == "ok":
+                    map_dir = os.path.join(decoded_dir, "maps")
+                    prune_old_files(map_dir, "mysekai_*.png", RETENTION_COUNT)
+                    logger.info("Mysekai Map Image: %s", map_path)
+                else:
+                    logger.warning("Mysekai map render failed: %s", mstatus)
                 process_mysekai_alert(out_json, original_url)
         elif dstatus == "skipped":
             logger.info("Decode skipped (api_type unsupported)")
