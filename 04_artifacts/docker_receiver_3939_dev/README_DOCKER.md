@@ -26,6 +26,7 @@ docker run -d \
   -e RECEIVER_PORT=3939 \
   -e API_REGION=cn \
   -e OUTPUT_ROOT=/data \
+  -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
   -e RETENTION_COUNT=25 \
   -e BOT_PUSH_ENABLED=1 \
   -e BOT_PUSH_URL=http://napcat:3000 \
@@ -37,8 +38,13 @@ docker run -d \
   -e ALERT_HIT_RETENTION=100 \
   -e ALERT_EVENT_RETENTION_LINES=5000 \
   -v /opt/pjsk-captures:/data \
+  -v /opt/pjsk-config:/data/config \
   pjsk-receiver:3939
 ```
+
+Optional config file:
+- put `mysekai_resource_map.json` at `/opt/pjsk-config/mysekai_resource_map.json`
+- this improves material-id/icon mapping consistency across environments
 
 Quick checks after start:
 
@@ -53,6 +59,7 @@ curl -sS http://127.0.0.1:3939/healthz
 
 - raw bin: /data/raw_api/suite or /data/raw_api/mysekai
 - decoded json: /data/decoded_api/suite or /data/decoded_api/mysekai
+- mysekai rendered maps: /data/decoded_api/mysekai/maps
 - service logs (rolling): /data/logs/receiver.log
 - diamond alert trigger: decoded mysekai full packet contains `mysekai_material:12`
 - diamond hit archives: /data/alerts/hits/
@@ -66,4 +73,5 @@ If you use `-v /opt/pjsk-captures:/data`, then on server:
 
 - /opt/pjsk-captures/raw_api/...
 - /opt/pjsk-captures/decoded_api/...
+- /opt/pjsk-captures/decoded_api/mysekai/maps/...
 - /opt/pjsk-captures/logs/receiver.log

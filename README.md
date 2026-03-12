@@ -48,6 +48,7 @@ docker run -d \
   -e RECEIVER_PORT=3939 \
   -e API_REGION=cn \
   -e OUTPUT_ROOT=/data \
+  -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
   -e RETENTION_COUNT=25 \
   -e BOT_PUSH_ENABLED=1 \
   -e BOT_PUSH_URL=http://napcat:3000 \
@@ -55,16 +56,22 @@ docker run -d \
   -e BOT_PUSH_MODE=<private_or_group> \
   -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
   -e BOT_PUSH_RETRY=3 \
-  -e ALERT_DEDUP_SECONDS=120 \
+  -e ALERT_WINDOW_CACHE_HOURS=72 \
   -e ALERT_HIT_RETENTION=100 \
   -e ALERT_EVENT_RETENTION_LINES=5000 \
   -v /opt/pjsk-captures:/data \
+  -v /opt/pjsk-config:/data/config \
   pjsk-receiver:dev3939
 ```
+
+Optional:
+- place `mysekai_resource_map.json` at `/opt/pjsk-config/mysekai_resource_map.json`
+- this is used to improve id/name/icon mapping for Mysekai render output
 
 Data output:
 - raw payloads: `/data/raw_api/...`
 - decoded json: `/data/decoded_api/...`
+- mysekai rendered maps: `/data/decoded_api/mysekai/maps/...`
 - logs: `/data/logs/receiver.log`
 - alert hits: `/data/alerts/hits/`
 - alert events: `/data/alerts/diamond_events.jsonl`
@@ -116,3 +123,84 @@ PY
 Notes:
 - `BOT_TOKEN` is the NapCat HTTP server token (used as `Authorization: Bearer <token>`).
 - If `BOT_PUSH_URL` uses a container name (for example `http://napcat:3000`), ensure both containers are attached to the same Docker network.
+
+## End-to-End Checklist (Capture -> Decode -> NapCat Push)
+
+Use this checklist when you want the complete pipeline to work on a server.
+
+### 1) Server / Network
+
+- Open server security-group/firewall TCP port `3939`.
+- Prepare persistent host directory (example): `/opt/pjsk-captures`.
+- Ensure receiver and NapCat containers are in the same Docker network.
+
+### 2) Deploy receiver container
+
+- Build image from `04_artifacts/docker_receiver_3939_dev`.
+- Run with:
+  - `-p 3939:3939`
+  - `-v /opt/pjsk-captures:/data`
+  - `-e PUBLIC_HOST=<YOUR_SERVER_PUBLIC_IP_OR_DOMAIN>`
+  - NapCat push envs (`BOT_PUSH_*`, `BOT_TOKEN`) if alert is enabled.
+
+### 3) Configure NapCat HTTP API
+
+- In NapCat WebUI, enable one HTTP server endpoint (normally `0.0.0.0:3000`).
+- Keep/record the HTTP token and pass it to receiver via `BOT_TOKEN`.
+- Verify from receiver container:
+  - `curl`/request to `http://napcat:3000` is reachable in the same Docker network.
+  - Unauthorized (`401/403`) means connectivity is OK but token is missing/wrong.
+
+### 4) Configure Shadowrocket module
+
+- `script-path` must point to:
+  - `http://<PUBLIC_HOST>:3939/upload.js`
+- `pattern` must match real game endpoints you need:
+  - `suite` endpoint(s)
+  - `mysekai` endpoint(s), especially full packet URL:
+    - `/api/user/<uid>/mysekai?isForceAllReloadOnlyMysekai=True|False`
+- `hostname` in `[Mitm]` must include all related game domains.
+- Install and trust mitm certificate on iOS, and enable MITM for the module.
+
+### 5) Trigger and verify data capture
+
+- Enter game and trigger target APIs:
+  - login flow for user/suite data
+  - enter Mysekai for Mysekai data
+- Check receiver logs:
+  - `Saved [SUITE]` / `Saved [MYSEKAI]`
+  - `Decoded JSON: ...`
+- Check files:
+  - `/opt/pjsk-captures/raw_api/...`
+  - `/opt/pjsk-captures/decoded_api/...`
+
+### 6) Verify push path
+
+- Use virtual test (section `Virtual Diamond Alert Test`) to send a synthetic `id=12` packet.
+- Expected:
+  - `/data/alerts/hits/*.json` created
+  - `/data/alerts/diamond_events.jsonl` appended
+  - NapCat sends message to configured private QQ or group target.
+
+### 7) Runtime behavior (current implementation)
+
+- Diamond alert source: decoded **full** Mysekai packet containing `mysekai_material:12`.
+- Dedup logic is window-based:
+  - refresh windows at local `05:00` and `17:00`
+  - same point in same window is not pushed repeatedly
+  - dedup cache persisted at `/data/alerts/dedup_cache.json`
+- Retention:
+  - raw/decoded/cards keep latest `RETENTION_COUNT`
+  - alert hit files keep `ALERT_HIT_RETENTION`
+  - alert events jsonl keep latest `ALERT_EVENT_RETENTION_LINES` lines
+
+### 8) Common failure points
+
+- Only `GET /upload.js` appears, but no `POST /upload`:
+  - module `pattern` not matched or script not attached to response.
+- Game hangs on Mysekai:
+  - over-aggressive rewrite/redirect rules; reduce to script capture only.
+- Push fails `Connection refused`:
+  - receiver cannot reach NapCat host/port in Docker network.
+- Push fails `401/403`:
+  - token mismatch; recheck `BOT_TOKEN` and NapCat HTTP server token.
