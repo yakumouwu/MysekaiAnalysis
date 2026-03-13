@@ -52,6 +52,49 @@ SITE_LABELS = {
 }
 
 
+def validate_startup_config():
+    errors = []
+    allowed_regions = {"cn", "jp", "en", "tw", "kr"}
+    allowed_push_modes = {"private", "group"}
+
+    if not (1 <= PORT <= 65535):
+        errors.append(f"RECEIVER_PORT out of range: {PORT}")
+    if REGION not in allowed_regions:
+        errors.append(f"API_REGION invalid: {REGION} (allowed: {sorted(allowed_regions)})")
+    if not OUTPUT_ROOT.strip():
+        errors.append("OUTPUT_ROOT is empty")
+    if RETENTION_COUNT <= 0:
+        errors.append(f"RETENTION_COUNT must be > 0 (got {RETENTION_COUNT})")
+    if ALERT_HIT_RETENTION <= 0:
+        errors.append(f"ALERT_HIT_RETENTION must be > 0 (got {ALERT_HIT_RETENTION})")
+    if ALERT_EVENT_RETENTION_LINES <= 0:
+        errors.append(
+            f"ALERT_EVENT_RETENTION_LINES must be > 0 (got {ALERT_EVENT_RETENTION_LINES})"
+        )
+    if ALERT_WINDOW_CACHE_HOURS <= 0:
+        errors.append(f"ALERT_WINDOW_CACHE_HOURS must be > 0 (got {ALERT_WINDOW_CACHE_HOURS})")
+    if BOT_PUSH_RETRY <= 0:
+        errors.append(f"BOT_PUSH_RETRY must be > 0 (got {BOT_PUSH_RETRY})")
+
+    if BOT_PUSH_ENABLED:
+        if BOT_PUSH_MODE not in allowed_push_modes:
+            errors.append(
+                f"BOT_PUSH_MODE invalid: {BOT_PUSH_MODE} (allowed: {sorted(allowed_push_modes)})"
+            )
+        if not BOT_PUSH_URL:
+            errors.append("BOT_PUSH_URL is required when BOT_PUSH_ENABLED=1")
+        if not BOT_TARGET_ID.isdigit():
+            errors.append(
+                f"BOT_TARGET_ID must be digits when BOT_PUSH_ENABLED=1 (got: {BOT_TARGET_ID})"
+            )
+
+    if errors:
+        for msg in errors:
+            logger.error("Config validation failed: %s", msg)
+        return False
+    return True
+
+
 def extract_api_type(url):
     if re.search(r"/mysekai(?:/|\?|$)", url):
         return "mysekai"
@@ -364,6 +407,8 @@ def format_hit_text(hits):
         else:
             parts.append(f"{label} diamond x{qty} siteId={sid}")
     return " | ".join(parts)
+
+
 def process_mysekai_alert(out_json, original_url):
     try:
         with open(out_json, "r", encoding="utf-8") as f:
@@ -509,6 +554,8 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     setup_logging()
+    if not validate_startup_config():
+        sys.exit(1)
     load_dedup_cache()
     logger.info("Local datetime.now(): %s", datetime.now().isoformat(timespec="seconds"))
     logger.info("Local timezone(TZ env): %s", os.environ.get("TZ", "(not set)"))

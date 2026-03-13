@@ -4,10 +4,12 @@
 - [x] Main receiver script text cleanup: removed mojibake labels/messages in `dockerScripts/import http.py`
 - [x] Startup logs now print local `datetime.now()` and `TZ` for time-window diagnostics
 - [x] Docs updated with `TZ=Asia/Shanghai` requirement for dedup-window correctness
+- [x] Startup config validation added (fail-fast on invalid critical env values)
+- [x] Local `auto_commit.bat` updated to exit immediately on failure (no interactive pause)
 
 ## Current priority
 - `P0`: Stabilize auto PR workflow and verify it can create/reopen PR after every `github-main-sync` push
-- `P0`: Add startup config validation for critical env vars (`BOT_PUSH_URL`, `BOT_PUSH_MODE`, `BOT_TARGET_ID`, `API_REGION`)
+- `P0`: Review and pin a final log schema (single-line, stable key order) for receiver and auto-commit logs
 - `P1`: Add failed-push retry queue (`/data/alerts/retry_queue.jsonl`) and background retry worker
 - `P1`: Add structured error codes in logs and include stderr on push/decrypt/render failures
 - `P1`: Add notification image push mode (text-only / image-only / text+image)
