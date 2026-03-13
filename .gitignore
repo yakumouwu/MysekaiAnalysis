@@ -5,6 +5,7 @@
 !.gitignore
 !README.md
 !batchAnalysis.bat
+AGENTS.md
 
 # Keep workflow files only.
 !.github/
