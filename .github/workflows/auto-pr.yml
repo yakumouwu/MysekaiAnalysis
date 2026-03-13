@@ -44,14 +44,20 @@ jobs:
                 return;
               }
 
-              await github.rest.pulls.update({
-                owner,
-                repo,
-                pull_number: latest.number,
-                state: "open"
-              });
-              core.info(`Reopened PR #${latest.number}`);
-              return;
+              try {
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: latest.number,
+                  state: "open"
+                });
+                core.info(`Reopened PR #${latest.number}`);
+                return;
+              } catch (e) {
+                core.warning(
+                  `Failed to reopen PR #${latest.number}, will try creating a new PR. ${e.message}`
+                );
+              }
             }
 
             const { data: pr } = await github.rest.pulls.create({
