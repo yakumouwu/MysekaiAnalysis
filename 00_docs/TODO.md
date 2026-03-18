@@ -1,6 +1,10 @@
 # Receiver Roadmap (Security / Performance / Feature Expansion)
 
 ## 0. Current status
+- Recent updates:
+  - 2026-03-18: tuned Mysekai beach map (siteId=6) overlay vertical alignment by lifting render placement ~12.5% for better icon-to-map fit.
+- Current priority:
+  - Verify site-level render alignment on production captures and, if needed, expose per-site offset defaults in docs/examples.
 - [x] Capture `suite` / `mysekai` responses
 - [x] Decode API payloads
 - [x] Render suite card image

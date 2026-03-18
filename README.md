@@ -227,6 +227,10 @@ Use this checklist when you want the complete pipeline to work on a server.
   - `MYSEKAI_ICON_SIZE` controls icon size
   - `MYSEKAI_COUNT_FONT_SIZE` controls quantity text size
   - `MYSEKAI_ICON_SPREAD` controls multi-icon spacing at same point
+  - site-level fine tuning is supported via env vars:
+    - `SITE<id>_OFFSET_X_DELTA`, `SITE<id>_OFFSET_Z_DELTA`
+    - `SITE<id>_SCALE_X_DELTA`, `SITE<id>_SCALE_Z_DELTA`
+  - current default calibration lifts site 6 (beach) overlays by about 12.5% vertically for better alignment
 - Retention:
   - raw/decoded/cards keep latest `RETENTION_COUNT`
   - alert hit files keep `ALERT_HIT_RETENTION`

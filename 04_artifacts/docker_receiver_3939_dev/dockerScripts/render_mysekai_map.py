@@ -8,7 +8,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 SITE_CONFIG = {
     5: {"name": "Map 1", "bg": "grassland.png", "transform": "zx_neg", "scale_add": (8.5, 8.5), "offset_add": (30.0, 0.0)},
-    6: {"name": "Map 2", "bg": "beach.png", "transform": "x_negz", "scale_add": (4.6, 4.2), "offset_add": (-70.0, 85.0)},
+    # Beach map: lift all overlays by ~12.5% of 1080p background height (~135px).
+    6: {"name": "Map 2", "bg": "beach.png", "transform": "x_negz", "scale_add": (4.6, 4.2), "offset_add": (-70.0, -50.0)},
     7: {"name": "Map 3", "bg": "flowergarden.png", "transform": "zx_neg", "scale_add": (5.0, 3.0), "offset_add": (55.0, -70.0)},
     8: {"name": "Map 4", "bg": "memorialplace.png", "transform": "x_negz", "scale_add": (3.0, 0.0), "offset_add": (-185.0, 35.0)},
 }
