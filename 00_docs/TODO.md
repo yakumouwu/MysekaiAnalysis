@@ -1,6 +1,10 @@
 # Receiver Roadmap (Security / Performance / Feature Expansion)
 
 ## 0. Current status
+- Recent updates:
+  - 2026-03-18: tuned Mysekai beach map (siteId=6) overlay vertical alignment by lifting render placement ~12.5% for better icon-to-map fit.
+- Current priority:
+  - Verify site-level render alignment on production captures and, if needed, expose per-site offset defaults in docs/examples.
 - [x] Capture `suite` / `mysekai` responses
 - [x] Decode API payloads
 - [x] Render suite card image
@@ -8,6 +12,8 @@
 - [x] Push notification via NapCat HTTP API
 - [x] Log rotation and file retention
 - [x] Health check endpoint (`/healthz`)
+- [x] Full-site Mysekai map output for alerts (no point-only crop)
+- [x] Configurable Mysekai icon/text sizing (`MYSEKAI_ICON_SIZE`, `MYSEKAI_COUNT_FONT_SIZE`, `MYSEKAI_ICON_SPREAD`)
 
 ## 1. Security hardening
 - [ ] Add shared-secret verification on `/upload` requests (header signature), reject unknown source
