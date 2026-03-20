@@ -51,11 +51,6 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-Optional config file:
-- put `mysekai_resource_map.json` at `/opt/pjsk-config/mysekai_resource_map.json`
-- this improves material-id/icon mapping consistency across environments
-- set `TZ=Asia/Shanghai`; dedup windows (`05:00` / `17:00`) use container local time
-
 Quick checks after start:
 
 ```bash

@@ -51,11 +51,6 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-可选配置文件：
-- 将 `mysekai_resource_map.json` 放在 `/opt/pjsk-config/mysekai_resource_map.json`
-- 该文件可提升资源 ID 与图标映射的一致性
-- 建议设置 `TZ=Asia/Shanghai`；去重窗口（`05:00` / `17:00`）使用容器本地时间
-
 启动后快速检查：
 
 ```bash
