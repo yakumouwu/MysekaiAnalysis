@@ -6,6 +6,7 @@
   - 2026-03-19: added unit tests for receiver core logic (`extract_api_type`, `find_diamond_hits`, `get_refresh_window_id`, `filter_hits_for_current_window`) under `tests/`.
   - 2026-03-20: updated auto-commit path whitelist to include `tests/`, so scheduled commits can include newly added test files.
   - 2026-03-20: updated auto-commit whitelist to include `README.zh-CN.md`, so bilingual root docs are committed by scheduled automation.
+  - 2026-03-20: expanded unit tests to cover notification push/retry/fallback, cache cleanup, `process_mysekai_notification` light integration, and HTTP endpoints (`/healthz`, `/upload.js`, `/`).
 - Current priority:
   - Implement strict "first hit only per window" dedup (current dedup is point-based within window).
 - [x] Capture `suite` / `mysekai` responses
@@ -67,9 +68,9 @@
 - [ ] Document all env vars in `README_DOCKER.md` with defaults and examples
 
 ## 7. Test plan
-- [ ] Unit test for `find_diamond_hits` (multiple sites, multiple drops)
+- [x] Unit test for `find_diamond_hits` (multiple sites, multiple drops)
 - [ ] Unit test for dedup behavior across restart (with persisted cache)
-- [ ] Integration test: mock NapCat endpoint and verify payload
+- [x] Integration test: mock NapCat endpoint and verify payload
 - [ ] Regression test for retention pruning
 
 ## 8. Open decisions
