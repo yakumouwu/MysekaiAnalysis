@@ -36,6 +36,7 @@ docker run -d \
   -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
   -e BOT_PUSH_MODE=<private_or_group> \
   -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
+  -e NOTIFICATION_USER_LABEL=<YOUR_USER_LABEL> \
   -e BOT_PUSH_RETRY=3 \
   -e BOT_MESSAGE_MODE=text+image \
   -e MYSEKAI_MAP_IMAGE_SIZE=1024 \
