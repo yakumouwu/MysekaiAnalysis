@@ -111,6 +111,22 @@ print("triggered:", os.path.exists(test_path), test_path)
 PY
 ```
 
+## Unit Tests
+
+Run from repository root:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+Current coverage scope:
+- API routing detection (`extract_api_type`)
+- Diamond extraction (`find_diamond_hits`, mixed payload cases)
+- Window boundary and dedup cache logic (`get_refresh_window_id`, `filter_hits_for_current_window`, `cleanup_window_dedup_cache`)
+- Notification push behavior (`send_bot_message`, `push_text_with_optional_image`, retry/fallback/mode branches)
+- Notification pipeline light integration (`process_mysekai_notification` skip/hit branches)
+- HTTP endpoints (`GET /healthz`, `GET /upload.js`, `GET /`)
+
 ## End-to-End Checklist (Capture -> Decode -> NapCat Push)
 
 ### 1) Server / Network

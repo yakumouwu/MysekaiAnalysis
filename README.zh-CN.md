@@ -111,6 +111,22 @@ print("triggered:", os.path.exists(test_path), test_path)
 PY
 ```
 
+## 单元测试
+
+在仓库根目录运行：
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+当前覆盖范围：
+- API 路由识别（`extract_api_type`）
+- 钻石命中提取（`find_diamond_hits`，含混合数据场景）
+- 窗口与去重缓存逻辑（`get_refresh_window_id`、`filter_hits_for_current_window`、`cleanup_window_dedup_cache`）
+- 通知推送逻辑（`send_bot_message`、`push_text_with_optional_image`，覆盖重试/回退/模式分支）
+- 通知流程轻集成（`process_mysekai_notification` 的跳过与命中路径）
+- HTTP 接口（`GET /healthz`、`GET /upload.js`、`GET /`）
+
 ## 端到端检查清单（Capture -> Decode -> NapCat Push）
 
 ### 1) 服务器 / 网络
