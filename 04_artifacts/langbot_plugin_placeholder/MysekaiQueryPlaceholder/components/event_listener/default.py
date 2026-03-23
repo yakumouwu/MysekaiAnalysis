@@ -119,6 +119,14 @@ class DefaultEventListener(EventListener):
                 await self._reply_text(event_context, "not bound, use: mysk bind <mysekai_user_id>")
                 return
 
+            # Reject malformed map arguments explicitly instead of silently falling back to all sites.
+            if len(args) > 1 and _extract_site_id(args[1:]) is None:
+                await self._reply_text(
+                    event_context,
+                    f"invalid map args, use `{self.command_prefix} map` or `{self.command_prefix} map site <id>`",
+                )
+                return
+
             now = time.time()
             last_ts = self.last_query_ts.get(sender_id, 0.0)
             remain = int(self.rate_limit_sec - (now - last_ts))

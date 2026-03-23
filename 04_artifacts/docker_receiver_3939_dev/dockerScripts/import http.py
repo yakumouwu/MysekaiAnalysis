@@ -321,41 +321,16 @@ def point_signature(point):
 
 
 def filter_hits_for_current_window(user_id, hits):
-    # Keep only points not sent in current refresh window.
+    # Strict window gating: only the first diamond hit in each refresh window can pass.
     now_dt = datetime.now()
     window_id = get_refresh_window_id(now_dt)
-    filtered = {}
-    changed = False
+    gate_key = f"{user_id}|{window_id}|first_hit_gate"
+    if gate_key in NOTIFICATION_DEDUP_CACHE:
+        return window_id, {}
 
-    for sid, detail in sorted(hits.items()):
-        points = detail.get("points", [])
-        if not points:
-            key = f"{user_id}|{window_id}|site:{sid}|site_only"
-            if key in NOTIFICATION_DEDUP_CACHE:
-                continue
-            NOTIFICATION_DEDUP_CACHE[key] = time.time()
-            filtered[sid] = {"qty": detail.get("qty", 0), "points": []}
-            changed = True
-            continue
-
-        new_points = []
-        qty_sum = 0
-        for p in points:
-            sig = point_signature(p)
-            key = f"{user_id}|{window_id}|site:{sid}|{sig}"
-            if key in NOTIFICATION_DEDUP_CACHE:
-                continue
-            NOTIFICATION_DEDUP_CACHE[key] = time.time()
-            new_points.append(p)
-            qty_sum += int(p.get("qty", 0))
-            changed = True
-
-        if new_points:
-            filtered[sid] = {"qty": qty_sum, "points": new_points}
-
-    if changed:
-        save_dedup_cache()
-    return window_id, filtered
+    NOTIFICATION_DEDUP_CACHE[gate_key] = time.time()
+    save_dedup_cache()
+    return window_id, hits
 
 
 def send_bot_message(message):
@@ -766,7 +741,22 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
         original_url = self.headers.get("X-Original-Url", "")
         api_type = extract_api_type(original_url)
         filename = generate_filename(api_type, original_url)
-        content_length = int(self.headers["Content-Length"])
+        try:
+            content_length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self.send_response(400)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"invalid content-length")
+            return
+
+        if content_length <= 0:
+            self.send_response(400)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"empty request body")
+            return
+
         received_data = self.rfile.read(content_length)
         raw_dir, decoded_dir = ensure_output_dirs(api_type)
         raw_path = os.path.join(raw_dir, filename)

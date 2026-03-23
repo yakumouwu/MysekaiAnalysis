@@ -1,4 +1,4 @@
-# project-sekai
+﻿# project-sekai
 [中文](./README.zh-CN.md) | [Docker English](./04_artifacts/docker_receiver_3939_dev/README_DOCKER.md) | [Docker 中文](./04_artifacts/docker_receiver_3939_dev/README_DOCKER.zh-CN.md)
 
 ## Overview
@@ -79,6 +79,7 @@ Data output:
 - logs: `/data/logs/receiver.log`
 - notification hits: `/data/notifications/hits/`
 - notification events: `/data/notifications/diamond_notifications.jsonl`
+- dedup rule: per user, only the first diamond hit in each window triggers render/push (`05:00-17:00` and `17:00-next 05:00`)
 
 ## Virtual Diamond Notification Test
 
@@ -152,6 +153,7 @@ Current coverage scope:
 - `mysk whoami`
 - `mysk map`
 - `mysk map site <id>`
+- invalid `mysk map` args are rejected with usage hint (no silent fallback to full-map query)
 - Backend-related config keys:
 - `backend_base_url`
 - `backend_map_api_path`

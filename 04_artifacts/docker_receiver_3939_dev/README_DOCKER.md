@@ -1,4 +1,4 @@
-# Mysekai/Suite Receiver Docker (Port 3939)
+﻿# Mysekai/Suite Receiver Docker (Port 3939)
 [中文](./README_DOCKER.zh-CN.md) | [Project README](../../README.md) | [项目中文总览](../../README.zh-CN.md)
 
 Runtime scripts are stored in `dockerScripts/` and copied into the image as `/app/dockerScripts`.
@@ -70,7 +70,7 @@ curl -sS http://127.0.0.1:3939/healthz
 - mysekai rendered maps: /data/decoded_api/mysekai/maps
 - service logs (rolling): /data/logs/receiver.log
 - diamond notification trigger: decoded mysekai full packet contains `mysekai_material:12`
-- render trigger: only when id=12 hit passes dedup in current time window
+- render trigger: only the first id=12 hit in current window can render/push (`05:00-17:00`, `17:00-next 05:00`)
 - render output: one image per hit site; only hit sites are generated/sent
 - render tuning:
   - `MYSEKAI_MAP_IMAGE_SIZE`: final output size
