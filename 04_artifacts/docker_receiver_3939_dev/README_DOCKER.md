@@ -39,6 +39,8 @@ docker run -d \
   -e NOTIFICATION_USER_LABEL=<YOUR_USER_LABEL> \
   -e BOT_PUSH_RETRY=3 \
   -e BOT_MESSAGE_MODE=text+image \
+  -e PLUGIN_API_KEY=<OPTIONAL_PLUGIN_API_KEY> \
+  -e PLUGIN_QUERY_IMAGE_RETENTION=25 \
   -e MYSEKAI_MAP_IMAGE_SIZE=1024 \
   -e MYSEKAI_ICON_SIZE=36 \
   -e MYSEKAI_COUNT_FONT_SIZE=18 \
@@ -82,7 +84,19 @@ curl -sS http://127.0.0.1:3939/healthz
 - diamond hit archives: /data/notifications/hits/
 - diamond notification events: /data/notifications/diamond_notifications.jsonl
 - health check endpoint: GET /healthz
+- plugin map query endpoint: GET /api/plugin/mysekai/map
+- plugin image file endpoint: GET /api/plugin/mysekai/file?name=<file_name>
 - `BOT_TOKEN` is the NapCat HTTP server token (Authorization Bearer token)
+
+## Plugin Query API
+
+- Optional auth header: `X-API-Key` (enabled only when `PLUGIN_API_KEY` is set)
+- Query parameters:
+  - `mysekai_user_id` (required)
+  - `requester_qq` (optional)
+  - `site_id` (optional, one of `5,6,7,8`)
+- Successful response format:
+  - `{ "ok": true, "message": "ok", "data": { "text": "...", "images": ["http://..."] } }`
 
 ## NapCat API baseline (v4.17.48)
 

@@ -1,11 +1,19 @@
 # MysekaiQueryPlaceholder
 
-This is a minimal placeholder plugin package for LangBot WebUI upload/install/initialize smoke testing.
+This plugin now contains a usable Mysekai command workflow for LangBot:
 
-It now includes one test command:
+- `mysk bind <mysekai_user_id>`
+- `mysk unbind`
+- `mysk whoami`
+- `mysk map`
+- `mysk map site <id>`
+- `mysk ping`
 
-- `mysk ping`: returns a `pong` message for end-to-end verification.
+Features:
 
-Implementation note:
+- one-to-one binding (`QQ -> mysekai_user_id`)
+- query rate limit per user (default 60s)
+- backend API call with optional `X-API-Key`
+- supports command prefix forms: `mysk`, `!mysk`, `/mysk`
 
-- This package now follows the `LangBotPluginBox`-style component layout (`components/event_listener/default.py`).
+Structure follows `LangBotPluginBox` style (`components/event_listener/default.py`).
