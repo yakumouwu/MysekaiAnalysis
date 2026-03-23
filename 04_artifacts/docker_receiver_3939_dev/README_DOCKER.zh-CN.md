@@ -77,7 +77,8 @@ docker exec -it langbot python -c "import urllib.request;print(urllib.request.ur
 - Mysekai 渲染图：`/data/decoded_api/mysekai/maps`
 - 服务日志（滚动）：`/data/logs/receiver.log`
 - 钻石通知触发条件：解密后的完整 mysekai 包中出现 `mysekai_material:12`
-- 渲染触发条件：仅当前窗口首次命中 id=12 时触发（`05:00-17:00`、`17:00-次日05:00`）
+- 自动通知渲染触发条件：仅当前窗口首次命中 id=12 时触发（05:00-17:00、17:00-次日05:00）
+- 插件查询渲染触发条件：有可用全量 mysekai 包即可渲染
 - 渲染输出：按命中地图分别输出多张图，仅生成/发送命中地图
 - 渲染参数：
   - `MYSEKAI_MAP_IMAGE_SIZE`：最终图片尺寸
@@ -87,7 +88,6 @@ docker exec -it langbot python -c "import urllib.request;print(urllib.request.ur
   - 可选站点微调：
     - `SITE<id>_OFFSET_X_DELTA`、`SITE<id>_OFFSET_Z_DELTA`
     - `SITE<id>_SCALE_X_DELTA`、`SITE<id>_SCALE_Z_DELTA`
-  - 当前默认校准：site 6（beach）图层整体上移约 12.5%
 - 钻石命中归档：`/data/notifications/hits/`
 - 通知事件日志：`/data/notifications/diamond_notifications.jsonl`
 - 健康检查接口：`GET /healthz`

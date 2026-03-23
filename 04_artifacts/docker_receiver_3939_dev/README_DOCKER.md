@@ -77,7 +77,8 @@ docker exec -it langbot python -c "import urllib.request;print(urllib.request.ur
 - mysekai rendered maps: /data/decoded_api/mysekai/maps
 - service logs (rolling): /data/logs/receiver.log
 - diamond notification trigger: decoded mysekai full packet contains `mysekai_material:12`
-- render trigger: only the first id=12 hit in current window can render/push (`05:00-17:00`, `17:00-next 05:00`)
+- automatic notification render trigger: only the first id=12 hit in current window can render/push (`05:00-17:00`, `17:00-next 05:00`)
+- plugin query render trigger: any available full mysekai packet can be rendered (not limited by diamond hit)
 - render output: one image per hit site; only hit sites are generated/sent
 - render tuning:
   - `MYSEKAI_MAP_IMAGE_SIZE`: final output size

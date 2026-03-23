@@ -79,7 +79,8 @@ Data output:
 - logs: `/data/logs/receiver.log`
 - notification hits: `/data/notifications/hits/`
 - notification events: `/data/notifications/diamond_notifications.jsonl`
-- dedup rule: per user, only the first diamond hit in each window triggers render/push (`05:00-17:00` and `17:00-next 05:00`)
+- automatic notification dedup/render rule: per user, only the first diamond hit in each window triggers render/push (`05:00-17:00` and `17:00-next 05:00`)
+- plugin query render rule: with an available full mysekai packet, map rendering is allowed even without diamond hits
 
 ## Virtual Diamond Notification Test
 
