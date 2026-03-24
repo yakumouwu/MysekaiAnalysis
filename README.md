@@ -60,8 +60,6 @@ docker run -d \
   -e MYSEKAI_ICON_SIZE=36 \
   -e MYSEKAI_COUNT_FONT_SIZE=18 \
   -e MYSEKAI_ICON_SPREAD=22 \
-  -e SITE6_WORLD_HALF_X=30 \
-  -e SITE6_WORLD_HALF_Z=68 \
   -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
   -e NOTIFICATION_HIT_RETENTION=100 \
   -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
@@ -84,7 +82,12 @@ Data output:
 - automatic notification dedup/render rule: per user, only the first diamond hit in each window triggers render/push (`05:00-17:00` and `17:00-next 05:00`)
 - plugin query render rule: with an available full mysekai packet, map rendering is allowed even without diamond hits
 - renderer projection rule: fixed-origin mode is used (map center = world `(0,0)`); lock `SITE<id>_WORLD_HALF_X/Z` for stable cross-packet alignment
-- site6 calibration: built-in defaults are pre-tuned (equivalent to `SCALE_DELTA≈+12/+12`, `OFFSET_DELTA≈+90/+170`), with optional runtime overrides via `SITE6_*_DELTA`
+- same-coordinate base material ignore (enabled by default): `MYSEKAI_IGNORE_BASE_MATERIALS=1`
+  - hide `id=1` when any `id=2..5` exists at the same coordinate
+  - hide `id=6` when any `id=7..12` exists at the same coordinate
+- site5/site6 calibration: built-in defaults are pre-tuned
+- site5 equivalent: `SCALE_DELTA≈+12/+12`, `OFFSET_DELTA≈+90/+170` (via site5 defaults)
+- site6 equivalent: `SCALE_DELTA≈+12/+12`, `OFFSET_DELTA≈+90/+170` (via site6 defaults)
 
 ## Virtual Diamond Notification Test
 

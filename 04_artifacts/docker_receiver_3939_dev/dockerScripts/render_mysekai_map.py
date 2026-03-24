@@ -12,7 +12,9 @@ SITE_CONFIG = {
         "bg": "grassland.png",
         "transform": "zx_neg",
         "world_bounds": (-30.0, 29.0, -23.0, 75.0),
-        "scale_add": (8.5, 8.5),
+        # Calibrated default aligned with site6 tuning strategy:
+        # equivalent to SCALE_DELTA ~= +14/+14 and OFFSET_DELTA ~= +0/+0.
+        "scale_add": (22.5, 22.5),
         "offset_add": (30.0, 0.0),
     },
     # Beach map: lift all overlays by ~12.5% of 1080p background height (~135px).
@@ -111,6 +113,13 @@ def _env_int(name, default):
         return int(v)
     except Exception:
         return int(default)
+
+
+def _env_bool(name, default):
+    v = os.environ.get(name)
+    if v is None or v == "":
+        return bool(default)
+    return str(v).strip().lower() in ("1", "true", "yes", "on")
 
 
 def _get_font(size):
@@ -239,6 +248,27 @@ def _extract_points(mysekai_json):
     return points_by_site
 
 
+def _filter_same_coord_base_materials(stat):
+    """
+    Hide base materials at the same coordinate when upgraded variants exist.
+    Rules (mysekai_material only):
+    - if id=1 and any id in [2,5] coexist, hide id=1
+    - if id=6 and any id in [7,12] coexist, hide id=6
+    """
+    if not _env_bool("MYSEKAI_IGNORE_BASE_MATERIALS", True):
+        return stat
+
+    material_keys = {rid for (rtype, rid) in stat if rtype == "mysekai_material"}
+
+    if 1 in material_keys and any(rid in material_keys for rid in range(2, 6)):
+        stat.pop(("mysekai_material", 1), None)
+
+    if 6 in material_keys and any(rid in material_keys for rid in range(7, 13)):
+        stat.pop(("mysekai_material", 6), None)
+
+    return stat
+
+
 def _render_site(points_by_site, site_id, assets_dir, target_size):
     coords = points_by_site.get(site_id, {})
     if not coords:
@@ -305,6 +335,7 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
         for d in drops:
             key = (d["resourceType"], d["resourceId"])
             stat[key] = stat.get(key, 0) + int(d["qty"])
+        stat = _filter_same_coord_base_materials(stat)
         # Keep icon layout deterministic for the same coordinate:
         # sort by resource identity instead of current quantity.
         entries = sorted(stat.items(), key=lambda t: (t[0][0], t[0][1]))

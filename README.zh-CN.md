@@ -81,6 +81,13 @@ docker run -d \
 - 事件日志：`/data/notifications/diamond_notifications.jsonl`
 - 自动通知去重与渲染规则：每用户每时间窗口仅首次钻石命中触发（`05:00-17:00`、`17:00-次日05:00`）
 - 插件查询渲染规则：只要存在可用全量 mysekai 包，即可渲染（不要求钻石命中）
+- 渲染投影规则：固定零点模式（地图中心 = 世界坐标 `(0,0)`），跨包一致性依赖固定世界尺度参数
+- 同点位普通材料忽略（默认开启）：`MYSEKAI_IGNORE_BASE_MATERIALS=1`
+  - 同点位有 `id=1` 且存在 `id=2..5` 时隐藏 `id=1`
+  - 同点位有 `id=6` 且存在 `id=7..12` 时隐藏 `id=6`
+- site5/site6 已内置校准参数：
+  - site5 等效：`SCALE_DELTA≈+12/+12`、`OFFSET_DELTA≈+90/+170`
+  - site6 等效：`SCALE_DELTA≈+12/+12`、`OFFSET_DELTA≈+90/+170`
 
 ## 虚拟钻石通知测试
 

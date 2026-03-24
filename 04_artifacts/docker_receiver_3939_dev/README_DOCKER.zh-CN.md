@@ -45,8 +45,6 @@ docker run -d \
   -e MYSEKAI_ICON_SIZE=36 \
   -e MYSEKAI_COUNT_FONT_SIZE=18 \
   -e MYSEKAI_ICON_SPREAD=22 \
-  -e SITE6_WORLD_HALF_X=30 \
-  -e SITE6_WORLD_HALF_Z=68 \
   -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
   -e NOTIFICATION_HIT_RETENTION=100 \
   -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
@@ -56,7 +54,7 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-说明：查询渲染已改为固定零点投影（地图中心为世界坐标 `(0,0)`）。当前代码内已固化一组 site6 校准参数（等效于 `SCALE_DELTA≈+12/+12`、`OFFSET_DELTA≈+90/+170`）；如需再调，可继续用 `SITE6_*_DELTA` 覆盖。
+说明：查询渲染已改为固定零点投影（地图中心为世界坐标 `(0,0)`）。当前代码内已固化 site5/site6 校准参数（等效 `SCALE_DELTA≈+12/+12`、`OFFSET_DELTA≈+90/+170`）；如需再调，可继续用 `SITE<id>_*_DELTA` 覆盖。
 
 启动后快速检查：
 
@@ -99,9 +97,11 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'SITE6_OFFSET_Z_DELTA=35 python /a
   - `MYSEKAI_ICON_SIZE`：图标尺寸
   - `MYSEKAI_COUNT_FONT_SIZE`：数量文字尺寸
   - `MYSEKAI_ICON_SPREAD`：同点多资源图标扩散半径
+  - `MYSEKAI_IGNORE_BASE_MATERIALS`：是否忽略同点位普通材料（默认 `1`）
+    - 规则：同点位有 `id=1` 且存在 `id=2..5` 时隐藏 `id=1`；有 `id=6` 且存在 `id=7..12` 时隐藏 `id=6`
   - 固定世界尺度（建议先固定后微调）：
     - `SITE<id>_WORLD_HALF_X`、`SITE<id>_WORLD_HALF_Z`
-    - 含义：世界坐标半轴范围，用于把固定坐标系投影到底图（例如 site6 常用 `30/68`）
+    - 含义：世界坐标半轴范围，用于把固定坐标系投影到底图（当前内置：site5 `30/75`，site6 `30/68`）
   - 可选站点微调：
     - `SITE<id>_OFFSET_X_DELTA`、`SITE<id>_OFFSET_Z_DELTA`
     - `SITE<id>_SCALE_X_DELTA`、`SITE<id>_SCALE_Z_DELTA`

@@ -45,8 +45,6 @@ docker run -d \
   -e MYSEKAI_ICON_SIZE=36 \
   -e MYSEKAI_COUNT_FONT_SIZE=18 \
   -e MYSEKAI_ICON_SPREAD=22 \
-  -e SITE6_WORLD_HALF_X=30 \
-  -e SITE6_WORLD_HALF_Z=68 \
   -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
   -e NOTIFICATION_HIT_RETENTION=100 \
   -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
@@ -56,7 +54,7 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-Note: query rendering now uses a fixed-origin projection (map center is world `(0,0)`). Site6 now ships with a calibrated built-in default (roughly `SCALE_DELTA≈+12/+12`, `OFFSET_DELTA≈+90/+170` equivalent); you can still override with `SITE6_*_DELTA`.
+Note: query rendering now uses a fixed-origin projection (map center is world `(0,0)`). Site5 and site6 now ship with calibrated built-in defaults (roughly `SCALE_DELTA≈+12/+12`, `OFFSET_DELTA≈+90/+170` equivalent); you can still override with `SITE<id>_*_DELTA`.
 
 Quick checks after start:
 
@@ -99,9 +97,11 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'SITE6_OFFSET_Z_DELTA=35 python /a
   - `MYSEKAI_ICON_SIZE`: icon size on map
   - `MYSEKAI_COUNT_FONT_SIZE`: quantity text size
   - `MYSEKAI_ICON_SPREAD`: spread radius for multi-resource points
+  - `MYSEKAI_IGNORE_BASE_MATERIALS`: whether to hide base materials on the same coordinate (default `1`)
+    - rule: hide `id=1` if any `id=2..5` exists at that coordinate; hide `id=6` if any `id=7..12` exists
   - fixed world scale (recommended to lock first):
     - `SITE<id>_WORLD_HALF_X`, `SITE<id>_WORLD_HALF_Z`
-    - meaning: world half-range projected onto the map (site6 commonly uses `30/68`)
+    - meaning: world half-range projected onto the map (for current built-ins: site5 `30/75`, site6 `30/68`)
   - optional per-site tuning:
     - `SITE<id>_OFFSET_X_DELTA`, `SITE<id>_OFFSET_Z_DELTA`
     - `SITE<id>_SCALE_X_DELTA`, `SITE<id>_SCALE_Z_DELTA`
