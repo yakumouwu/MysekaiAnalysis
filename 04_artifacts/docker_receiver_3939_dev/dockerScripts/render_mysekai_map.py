@@ -13,9 +13,9 @@ SITE_CONFIG = {
         "transform": "zx_neg",
         "world_bounds": (-30.0, 29.0, -23.0, 75.0),
         # Calibrated default aligned with site6 tuning strategy:
-        # equivalent to SCALE_DELTA ~= +14/+14 and OFFSET_DELTA ~= +0/+0.
-        "scale_add": (22.5, 22.5),
-        "offset_add": (30.0, 0.0),
+        # equivalent to SCALE_DELTA ~= +15/+15 and OFFSET_DELTA ~= +0/-100.
+        "scale_add": (23.5, 23.5),
+        "offset_add": (30.0, -100.0),
     },
     # Beach map: lift all overlays by ~12.5% of 1080p background height (~135px).
     6: {
