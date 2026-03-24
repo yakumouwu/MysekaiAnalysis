@@ -28,16 +28,16 @@ SITE_CONFIG = {
         "bg": "flowergarden.png",
         "transform": "zx_neg",
         "world_bounds": (-30.0, 29.0, -28.0, 75.0),
-        "scale_add": (5.0, 3.0),
-        "offset_add": (55.0, -70.0),
+        "scale_add": (20.0, 20.0),
+        "offset_add": (-20.0, 40.0),
     },
     8: {
         "name": "Map 4",
         "bg": "memorialplace.png",
         "transform": "x_negz",
         "world_bounds": (-30.0, 29.0, -29.0, 70.0),
-        "scale_add": (3.0, 0.0),
-        "offset_add": (-185.0, 35.0),
+        "scale_add": (16.6, 16.2),
+        "offset_add": (20.0, 120.0),
     },
 }
 
