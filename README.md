@@ -60,6 +60,8 @@ docker run -d \
   -e MYSEKAI_ICON_SIZE=36 \
   -e MYSEKAI_COUNT_FONT_SIZE=18 \
   -e MYSEKAI_ICON_SPREAD=22 \
+  -e SITE6_WORLD_HALF_X=30 \
+  -e SITE6_WORLD_HALF_Z=68 \
   -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
   -e NOTIFICATION_HIT_RETENTION=100 \
   -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
@@ -81,6 +83,7 @@ Data output:
 - notification events: `/data/notifications/diamond_notifications.jsonl`
 - automatic notification dedup/render rule: per user, only the first diamond hit in each window triggers render/push (`05:00-17:00` and `17:00-next 05:00`)
 - plugin query render rule: with an available full mysekai packet, map rendering is allowed even without diamond hits
+- renderer projection rule: fixed-origin mode is used (map center = world `(0,0)`); lock `SITE<id>_WORLD_HALF_X/Z` for stable cross-packet alignment
 
 ## Virtual Diamond Notification Test
 

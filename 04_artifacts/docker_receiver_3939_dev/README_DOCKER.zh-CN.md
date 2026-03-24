@@ -42,9 +42,11 @@ docker run -d \
   -e PLUGIN_API_KEY=<OPTIONAL_PLUGIN_API_KEY> \
   -e PLUGIN_QUERY_IMAGE_RETENTION=25 \
   -e MYSEKAI_MAP_IMAGE_SIZE=1024 \
-  -e MYSEKAI_ICON_SIZE=36 \
+ -e MYSEKAI_ICON_SIZE=36 \
   -e MYSEKAI_COUNT_FONT_SIZE=18 \
   -e MYSEKAI_ICON_SPREAD=22 \
+  -e SITE6_WORLD_HALF_X=30 \
+  -e SITE6_WORLD_HALF_Z=68 \
   -e SITE6_OFFSET_Z_DELTA=55 \ 
   -e SITE6_OFFSET_X_DELTA=25 \ 
   -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
@@ -56,7 +58,7 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-说明：`SITE6_OFFSET_Z_DELTA=35` 为可选微调参数，用于当前部署中的 site6 查询渲染校准。
+说明：查询渲染已改为固定零点投影（地图中心为世界坐标 `(0,0)`）。如果需要跨包稳定对齐，先固定 `SITE<id>_WORLD_HALF_X/Z`，再微调 `OFFSET/ SCALE`。
 
 启动后快速检查：
 
@@ -99,9 +101,13 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'SITE6_OFFSET_Z_DELTA=35 python /a
   - `MYSEKAI_ICON_SIZE`：图标尺寸
   - `MYSEKAI_COUNT_FONT_SIZE`：数量文字尺寸
   - `MYSEKAI_ICON_SPREAD`：同点多资源图标扩散半径
+  - 固定世界尺度（建议先固定后微调）：
+    - `SITE<id>_WORLD_HALF_X`、`SITE<id>_WORLD_HALF_Z`
+    - 含义：世界坐标半轴范围，用于把固定坐标系投影到底图（例如 site6 常用 `30/68`）
   - 可选站点微调：
     - `SITE<id>_OFFSET_X_DELTA`、`SITE<id>_OFFSET_Z_DELTA`
     - `SITE<id>_SCALE_X_DELTA`、`SITE<id>_SCALE_Z_DELTA`
+  - 同一坐标多资源点采用稳定排序（按资源类型+ID），减少同点内部图标抖动
 - 钻石命中归档：`/data/notifications/hits/`
 - 通知事件日志：`/data/notifications/diamond_notifications.jsonl`
 - 健康检查接口：`GET /healthz`

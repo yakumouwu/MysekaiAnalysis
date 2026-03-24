@@ -45,6 +45,8 @@ docker run -d \
   -e MYSEKAI_ICON_SIZE=36 \
   -e MYSEKAI_COUNT_FONT_SIZE=18 \
   -e MYSEKAI_ICON_SPREAD=22 \
+  -e SITE6_WORLD_HALF_X=30 \
+  -e SITE6_WORLD_HALF_Z=68 \
   -e SITE6_OFFSET_Z_DELTA=55 \ 
   -e SITE6_OFFSET_X_DELTA=25 \ 
   -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
@@ -56,7 +58,7 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-Note: `SITE6_OFFSET_Z_DELTA=35` is an optional tuning value used in current deployment to adjust site6 query rendering.
+Note: query rendering now uses a fixed-origin projection (map center is world `(0,0)`). For cross-packet stability, fix `SITE<id>_WORLD_HALF_X/Z` first, then tune `OFFSET/SCALE`.
 
 Quick checks after start:
 
@@ -99,9 +101,13 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'SITE6_OFFSET_Z_DELTA=35 python /a
   - `MYSEKAI_ICON_SIZE`: icon size on map
   - `MYSEKAI_COUNT_FONT_SIZE`: quantity text size
   - `MYSEKAI_ICON_SPREAD`: spread radius for multi-resource points
+  - fixed world scale (recommended to lock first):
+    - `SITE<id>_WORLD_HALF_X`, `SITE<id>_WORLD_HALF_Z`
+    - meaning: world half-range projected onto the map (site6 commonly uses `30/68`)
   - optional per-site tuning:
     - `SITE<id>_OFFSET_X_DELTA`, `SITE<id>_OFFSET_Z_DELTA`
     - `SITE<id>_SCALE_X_DELTA`, `SITE<id>_SCALE_Z_DELTA`
+  - multi-resource icons on the same coordinate now use deterministic ordering (resource type + id)
   - current default calibration lifts site 6 (beach) overlays by about 12.5% vertically
 - diamond hit archives: /data/notifications/hits/
 - diamond notification events: /data/notifications/diamond_notifications.jsonl

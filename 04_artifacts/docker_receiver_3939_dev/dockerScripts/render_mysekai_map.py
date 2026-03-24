@@ -11,6 +11,7 @@ SITE_CONFIG = {
         "name": "Map 1",
         "bg": "grassland.png",
         "transform": "zx_neg",
+        "world_bounds": (-30.0, 29.0, -23.0, 75.0),
         "scale_add": (8.5, 8.5),
         "offset_add": (30.0, 0.0),
     },
@@ -19,6 +20,7 @@ SITE_CONFIG = {
         "name": "Map 2",
         "bg": "beach.png",
         "transform": "x_negz",
+        "world_bounds": (-30.0, 29.0, -20.0, 68.0),
         "scale_add": (4.6, 4.2),
         "offset_add": (-70.0, -50.0),
     },
@@ -26,6 +28,7 @@ SITE_CONFIG = {
         "name": "Map 3",
         "bg": "flowergarden.png",
         "transform": "zx_neg",
+        "world_bounds": (-30.0, 29.0, -28.0, 75.0),
         "scale_add": (5.0, 3.0),
         "offset_add": (55.0, -70.0),
     },
@@ -33,6 +36,7 @@ SITE_CONFIG = {
         "name": "Map 4",
         "bg": "memorialplace.png",
         "transform": "x_negz",
+        "world_bounds": (-30.0, 29.0, -29.0, 70.0),
         "scale_add": (3.0, 0.0),
         "offset_add": (-185.0, 35.0),
     },
@@ -257,29 +261,36 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
     draw = ImageDraw.Draw(img)
     bg_w, bg_h = img.size
 
-    all_x = [p[0] for p in coords]
-    all_z = [p[1] for p in coords]
-    min_x, max_x = min(all_x) - 1.0, max(all_x) + 1.0
-    min_z, max_z = min(all_z) - 1.0, max(all_z) + 1.0
-    range_x = max(1.0, max_x - min_x + 1.0)
-    range_z = max(1.0, max_z - min_z + 1.0)
-
+    min_x, max_x, min_z, max_z = cfg.get("world_bounds", (-30.0, 30.0, -30.0, 30.0))
+    half_world_x_default = max(abs(float(min_x)), abs(float(max_x)))
+    half_world_z_default = max(abs(float(min_z)), abs(float(max_z)))
+    half_world_x = max(
+        1.0, _env_float(f"SITE{site_id}_WORLD_HALF_X", half_world_x_default)
+    )
+    half_world_z = max(
+        1.0, _env_float(f"SITE{site_id}_WORLD_HALF_Z", half_world_z_default)
+    )
+    world_span_x = (half_world_x * 2.0) + 1.0
+    world_span_z = (half_world_z * 2.0) + 1.0
     usable_w = bg_w * 0.70
     usable_h = bg_h * 0.70
-    base_scale = min(usable_w / range_x, usable_h / range_z)
+    base_scale = min(usable_w / world_span_x, usable_h / world_span_z)
     scale_x = base_scale + cfg["scale_add"][0]
     scale_z = base_scale + cfg["scale_add"][1]
     scale_x += _env_float(f"SITE{site_id}_SCALE_X_DELTA", 0.0)
     scale_z += _env_float(f"SITE{site_id}_SCALE_Z_DELTA", 0.0)
 
-    offset_x = (bg_w - range_x * scale_x) / 2.0 + cfg["offset_add"][0]
-    offset_z = (bg_h - range_z * scale_z) / 2.0 + cfg["offset_add"][1]
+    # Fixed-origin projection: world coordinate (0,0) maps to image center
+    # plus configured/manual offsets. This keeps identical coordinates stable
+    # across different json packets.
+    offset_x = (bg_w / 2.0) + cfg["offset_add"][0]
+    offset_z = (bg_h / 2.0) + cfg["offset_add"][1]
     offset_x += _env_float(f"SITE{site_id}_OFFSET_X_DELTA", 0.0)
     offset_z += _env_float(f"SITE{site_id}_OFFSET_Z_DELTA", 0.0)
 
     def coord_to_px(cx, cz):
-        px = offset_x + (cx - min_x) * scale_x + scale_x / 2.0
-        pz = offset_z + (cz - min_z) * scale_z + scale_z / 2.0
+        px = offset_x + (cx * scale_x)
+        pz = offset_z + (cz * scale_z)
         return int(px), int(pz)
 
     item_pixels = []
@@ -291,7 +302,9 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
         for d in drops:
             key = (d["resourceType"], d["resourceId"])
             stat[key] = stat.get(key, 0) + int(d["qty"])
-        entries = sorted(stat.items(), key=lambda t: t[1], reverse=True)
+        # Keep icon layout deterministic for the same coordinate:
+        # sort by resource identity instead of current quantity.
+        entries = sorted(stat.items(), key=lambda t: (t[0][0], t[0][1]))
 
         if len(entries) == 1:
             main_key, main_qty = entries[0]
