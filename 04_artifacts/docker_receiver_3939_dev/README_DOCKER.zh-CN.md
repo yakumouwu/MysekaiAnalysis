@@ -1,14 +1,7 @@
 # Mysekai/Suite Receiver Docker 指南（端口 3939）
 [English](./README_DOCKER.md) | [Project README](../../README.md) | [项目中文总览](../../README.zh-CN.md)
 
-运行脚本位于 `dockerScripts/`，构建镜像时会复制到容器内 `/app/dockerScripts`。
-镜像内会安装 `Noto Sans CJK` 字体，因此 `MYSEKAI_COUNT_FONT_SIZE` 与中文文本渲染会稳定生效。
-推荐部署方式：同时把宿主机脚本目录挂载到容器 `/app/dockerScripts`。这样后续只需要替换宿主机脚本并删除旧容器、重建新容器，不需要每次重新构建镜像。
-
 ## 构建镜像
-
-说明：
-- Dockerfile 中的 Debian `apt` 源已切换为阿里云镜像，以减少国内环境构建时字体包下载过慢的问题。
 
 ```bash
 docker build -t pjsk-receiver:latest .
@@ -17,8 +10,7 @@ docker build -t pjsk-receiver:latest .
 ## 启动容器
 
 注意：
-- 当 `BOT_PUSH_URL` 为 `http://napcat:3000` 时，Receiver 与 NapCat 必须在同一个自定义 Docker 网络中。
-- 如果没有该网络，可先创建：`docker network create <YOUR_DOCKER_NETWORK>`。
+- Receiver 与 NapCat 必须在同一个 Docker 网络中：`docker network create <YOUR_DOCKER_NETWORK>`。
 - 文档中的 ID/Token 均为占位，请在实际部署时替换为你自己的参数。
 
 ```bash
@@ -60,61 +52,6 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-说明：查询渲染已改为固定零点投影（地图中心为世界坐标 `(0,0)`）。单图输出保持底图原始比例（`16:9`），`MYSEKAI_MAP_IMAGE_SIZE` 表示输出宽度。当前代码内 4 张地图都已固化一组默认参数；如需再调，可继续用 `SITE<id>_*_DELTA` 覆盖。
-
-## 推荐更新流程（无需重建镜像）
-
-前提：
-- 镜像内 Python 依赖与基础环境没有变化
-- 你只修改了 `dockerScripts/` 下的脚本
-- 容器启动时已挂载：`-v /opt/docker_receiver_3939_dev/dockerScripts:/app/dockerScripts`
-
-服务器示例流程：
-
-```bash
-cd /opt/docker_receiver_3939_dev
-docker rm -f pjsk-receiver-dev
-docker run -d \
-  --name pjsk-receiver-dev \
-  --network langbot-network \
-  --restart=always \
-  --log-driver=json-file \
-  --log-opt max-size=20m \
-  --log-opt max-file=5 \
-  -p 3939:3939 \
-  -e PUBLIC_HOST=39.97.43.115 \
-  -e RECEIVER_PORT=3939 \
-  -e API_REGION=cn \
-  -e OUTPUT_ROOT=/data \
-  -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
-  -e RETENTION_COUNT=25 \
-  -e BOT_PUSH_ENABLED=1 \
-  -e BOT_PUSH_URL=http://napcat:3000 \
-  -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
-  -e BOT_PUSH_MODE=group \
-  -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
-  -e BOT_PUSH_RETRY=3 \
-  -e BOT_MESSAGE_MODE=text+image \
-  -e PLUGIN_QUERY_IMAGE_RETENTION=25 \
-  -e MYSEKAI_MAP_IMAGE_SIZE=1024 \
-  -e MYSEKAI_ICON_SIZE=36 \
-  -e MYSEKAI_COUNT_FONT_SIZE=18 \
-  -e MYSEKAI_ICON_SPREAD=22 \
-  -e MYSEKAI_IGNORE_BASE_MATERIALS=1 \
-  -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
-  -e NOTIFICATION_HIT_RETENTION=100 \
-  -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
-  -e TZ=Asia/Shanghai \
-  -v /opt/pjsk-captures:/data \
-  -v /opt/pjsk-config:/data/config \
-  -v /opt/docker_receiver_3939_dev/dockerScripts:/app/dockerScripts \
-  pjsk-receiver:dev3939
-```
-
-说明：
-- 如果修改了 `Dockerfile`、Python 依赖、系统包，仍然需要重新构建镜像
-- 如果只改了 `render_mysekai_map.py`、`import http.py` 等运行脚本，上述方式即可生效
-
 启动后快速检查：
 
 ```bash
@@ -131,7 +68,7 @@ docker exec -it langbot python -c "import urllib.request;print(urllib.request.ur
 docker exec -it langbot python -c "import urllib.request;print(urllib.request.urlopen('http://pjsk-receiver-dev:3939/api/plugin/mysekai/map?mysekai_user_id=<YOUR_MYSEKAI_USER_ID>&requester_qq=123456',timeout=20).read().decode())"
 ```
 
-重建后渲染测试（通用单图）：
+渲染测试（通用单图）：
 
 ```bash
 docker exec -it pjsk-receiver-dev /bin/sh -lc 'python /app/dockerScripts/render_mysekai_map.py \
@@ -147,32 +84,13 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'python /app/dockerScripts/render_
 - 解密 json：`/data/decoded_api/suite` 或 `/data/decoded_api/mysekai`
 - Mysekai 渲染图：`/data/decoded_api/mysekai/maps`
 - 服务日志（滚动）：`/data/logs/receiver.log`
-- 钻石通知触发条件：解密后的完整 mysekai 包中出现 `mysekai_material:12`
-- 自动通知渲染触发条件：仅当前窗口首次命中 id=12 时触发（05:00-17:00、17:00-次日05:00）
-- 插件查询渲染触发条件：有可用全量 mysekai 包即可渲染
-- 渲染输出：按命中地图分别输出多张图，仅生成/发送命中地图
 - 渲染参数：
-  - `MYSEKAI_MAP_IMAGE_SIZE`：输出目标宽度（单图保持原始 `16:9` 比例）
+  - `MYSEKAI_MAP_IMAGE_SIZE`：输出目标宽度
   - `MYSEKAI_ICON_SIZE`：图标尺寸
   - `MYSEKAI_COUNT_FONT_SIZE`：数量文字尺寸
   - `MYSEKAI_ICON_SPREAD`：同点多资源图标扩散半径
-  - `MYSEKAI_IGNORE_BASE_MATERIALS`：是否忽略同点位普通材料（默认 `1`）
-    - 规则：同点位有 `id=1` 且存在 `id=2..5` 时隐藏 `id=1`；有 `id=6` 且存在 `id=7..12` 时隐藏 `id=6`
-  - 兜底图标仅保留：钻石（`mysekai_material:12`）与蓝图碎片（`mysekai_item:7`）
-  - 未映射的唱片资源会直接跳过，不再绘制黑点占位
-  - 固定世界尺度（建议先固定后微调）：
-    - `SITE<id>_WORLD_HALF_X`、`SITE<id>_WORLD_HALF_Z`
-    - 含义：世界坐标半轴范围，用于把固定坐标系投影到底图（当前内置：site5 `30/75`，site6 `30/68`，site7 `30/75`，site8 `30/70`）
-  - 可选站点微调：
-    - `SITE<id>_OFFSET_X_DELTA`、`SITE<id>_OFFSET_Z_DELTA`
-    - `SITE<id>_SCALE_X_DELTA`、`SITE<id>_SCALE_Z_DELTA`
-  - 同一坐标多资源点采用稳定排序（按资源类型+ID），减少同点内部图标抖动
-  - 当前内置固化参数：
-    - site5：`scale_add=(25.5,25.5)`、`offset_add=(0,-90)`
-    - site6：`scale_add=(16.6,16.2)`、`offset_add=(20,120)`
-    - site7：`scale_add=(19,19)`、`offset_add=(-60,20)`
-    - site8：`scale_add=(16.6,16.2)`、`offset_add=(20,-120)`
-- 钻石命中归档：`/data/notifications/hits/`
+  - `MYSEKAI_IGNORE_BASE_MATERIALS`：是否忽略同点位普通材料
+- 自动通知归档：`/data/notifications/hits/`
 - 通知事件日志：`/data/notifications/diamond_notifications.jsonl`
 - 健康检查接口：`GET /healthz`
 - 插件地图查询接口：`GET /api/plugin/mysekai/map`
@@ -202,12 +120,3 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'python /app/dockerScripts/render_
 - `message` 可为字符串，或消息段数组
 - 图片消息段格式：
   - `{"type":"image","data":{"file":"<path|url|base64>"}}`
-
-## 宿主机路径映射示例
-
-若使用 `-v /opt/pjsk-captures:/data`，则服务端可在以下路径查看输出：
-
-- `/opt/pjsk-captures/raw_api/...`
-- `/opt/pjsk-captures/decoded_api/...`
-- `/opt/pjsk-captures/decoded_api/mysekai/maps/...`
-- `/opt/pjsk-captures/logs/receiver.log`

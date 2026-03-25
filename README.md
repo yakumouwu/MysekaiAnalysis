@@ -25,9 +25,6 @@ This repository provides local and Docker receivers for:
 
 Build:
 
-Note:
-- The Dockerfile now switches Debian `apt` sources to the Aliyun mirror to make package installation faster in mainland China environments.
-
 ```bash
 docker build -t pjsk-receiver:latest .
 ```
@@ -74,9 +71,7 @@ docker run -d \
 ```
 
 Optional:
-- place `mysekai_resource_map.json` in the proper config path to improve icon mapping accuracy
 - recommended: bind-mount host `dockerScripts/` to container `/app/dockerScripts` so script-only updates do not require rebuilding the image
-- the Docker image now bundles `Noto Sans CJK`, so `MYSEKAI_COUNT_FONT_SIZE` and Chinese text rendering behave consistently
 
 Data output:
 - raw payloads: `/data/raw_api/...`
@@ -90,15 +85,6 @@ Data output:
 - renderer projection rule: fixed-origin mode is used (map center = world `(0,0)`); lock `SITE<id>_WORLD_HALF_X/Z` for stable cross-packet alignment
 - single-site render output now preserves the source map aspect ratio (`16:9`), and `MYSEKAI_MAP_IMAGE_SIZE` is treated as target output width
 - same-coordinate base material ignore (enabled by default): `MYSEKAI_IGNORE_BASE_MATERIALS=1`
-  - hide `id=1` when any `id=2..5` exists at the same coordinate
-  - hide `id=6` when any `id=7..12` exists at the same coordinate
-- fallback icons: only diamond (`mysekai_material:12`) and blueprint scrap (`mysekai_item:7`) use hardcoded fallback icons
-- unmapped music records are skipped during rendering and no longer show placeholder dots
-- current built-in calibration defaults:
-- site5: `world_bounds=(-30,29,-23,75)`, `scale_add=(25.5,25.5)`, `offset_add=(0,-90)`
-- site6: `world_bounds=(-30,29,-20,68)`, `scale_add=(16.6,16.2)`, `offset_add=(20,120)`
-- site7: `world_bounds=(-30,29,-28,75)`, `scale_add=(19,19)`, `offset_add=(-60,20)`
-- site8: `world_bounds=(-30,29,-29,70)`, `scale_add=(16.6,16.2)`, `offset_add=(20,-120)`
 
 ## Virtual Diamond Notification Test
 
@@ -182,8 +168,6 @@ Validated behavior (current):
 - `mysk bind <mysekai_user_id>` stores a per-QQ binding (`QQ user_id -> mysekai_user_id`)
 - `mysk map` queries the latest available full mysekai packet of the bound user
 - `mysk map site <id>` returns a single-site map (`id` in `5,6,7,8`)
-- query text uses localized site labels (`5=初始空地`, `7=烂漫花田`, `6=心愿沙滩`, `8=忘却之所`)
-- query text policy: full query returns empty text; single-site query returns localized map name only
 - unbound query returns: `not bound, use: mysk bind <mysekai_user_id>`
 - no data query returns: `map query failed: no full mysekai packet found for user`
 

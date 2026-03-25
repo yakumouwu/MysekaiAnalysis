@@ -25,9 +25,6 @@
 
 构建：
 
-说明：
-- Dockerfile 已将 Debian `apt` 源切到阿里云镜像，减少国内环境构建字体依赖时的等待时间。
-
 ```bash
 docker build -t pjsk-receiver:latest .
 ```
@@ -74,9 +71,7 @@ docker run -d \
 ```
 
 可选：
-- 将 `mysekai_resource_map.json` 放到配置目录，以提升图标映射准确性。
 - 推荐把 `dockerScripts/` 宿主机目录挂载到容器 `/app/dockerScripts`，这样后续如果只改运行脚本，就不需要重新构建镜像。
-- Docker 镜像现已内置 `Noto Sans CJK` 字体，`MYSEKAI_COUNT_FONT_SIZE` 与中文文本渲染可稳定生效。
 
 数据输出：
 - 原始包：`/data/raw_api/...`
@@ -90,15 +85,6 @@ docker run -d \
 - 渲染投影规则：固定零点模式（地图中心 = 世界坐标 `(0,0)`），跨包一致性依赖固定世界尺度参数
 - 单图渲染现已保持底图原始比例（`16:9`），`MYSEKAI_MAP_IMAGE_SIZE` 表示输出目标宽度
 - 同点位普通材料忽略（默认开启）：`MYSEKAI_IGNORE_BASE_MATERIALS=1`
-  - 同点位有 `id=1` 且存在 `id=2..5` 时隐藏 `id=1`
-  - 同点位有 `id=6` 且存在 `id=7..12` 时隐藏 `id=6`
-- 兜底图标目前仅保留两类：钻石（`mysekai_material:12`）与蓝图碎片（`mysekai_item:7`）
-- 未映射的唱片资源会在渲染时直接跳过，不再绘制黑点占位
-- 当前内置固化参数：
-  - site5：`world_bounds=(-30,29,-23,75)`、`scale_add=(25.5,25.5)`、`offset_add=(0,-90)`
-  - site6：`world_bounds=(-30,29,-20,68)`、`scale_add=(16.6,16.2)`、`offset_add=(20,120)`
-  - site7：`world_bounds=(-30,29,-28,75)`、`scale_add=(19,19)`、`offset_add=(-60,20)`
-  - site8：`world_bounds=(-30,29,-29,70)`、`scale_add=(16.6,16.2)`、`offset_add=(20,-120)`
 
 ## 虚拟钻石通知测试
 
