@@ -2,6 +2,7 @@
 [中文](./README_DOCKER.zh-CN.md) | [Project README](../../README.md) | [项目中文总览](../../README.zh-CN.md)
 
 Runtime scripts are stored in `dockerScripts/` and copied into the image as `/app/dockerScripts`.
+Recommended deployment mode: also bind-mount the host script directory to `/app/dockerScripts`. That way, later script-only updates only require replacing host files and recreating the container, without rebuilding the image every time.
 
 ## Build
 
@@ -51,10 +52,64 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -v /opt/pjsk-captures:/data \
   -v /opt/pjsk-config:/data/config \
+  -v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts \
   pjsk-receiver:latest
 ```
 
-Note: query rendering now uses a fixed-origin projection (map center is world `(0,0)`). All four sites now ship with calibrated built-in defaults, and you can still override them with `SITE<id>_*_DELTA` if needed.
+Note: query rendering now uses a fixed-origin projection (map center is world `(0,0)`). Single-site outputs preserve the original map aspect ratio (`16:9`), and `MYSEKAI_MAP_IMAGE_SIZE` is treated as output width. All four sites now ship with calibrated built-in defaults, and you can still override them with `SITE<id>_*_DELTA` if needed.
+
+## Recommended update flow (no image rebuild)
+
+Prerequisites:
+- Python dependencies and base runtime in the image have not changed
+- You only changed scripts under `dockerScripts/`
+- The container was started with `-v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts`
+
+Example server flow:
+
+```bash
+cd /opt/pjsk-receiver-3939-dev
+docker rm -f pjsk-receiver-dev
+docker run -d \
+  --name pjsk-receiver-dev \
+  --network langbot-network \
+  --restart=always \
+  --log-driver=json-file \
+  --log-opt max-size=20m \
+  --log-opt max-file=5 \
+  -p 3939:3939 \
+  -e PUBLIC_HOST=39.97.43.115 \
+  -e RECEIVER_PORT=3939 \
+  -e API_REGION=cn \
+  -e OUTPUT_ROOT=/data \
+  -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
+  -e RETENTION_COUNT=25 \
+  -e BOT_PUSH_ENABLED=1 \
+  -e BOT_PUSH_URL=http://napcat:3000 \
+  -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
+  -e BOT_PUSH_MODE=group \
+  -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
+  -e BOT_PUSH_RETRY=3 \
+  -e BOT_MESSAGE_MODE=text+image \
+  -e PLUGIN_QUERY_IMAGE_RETENTION=25 \
+  -e MYSEKAI_MAP_IMAGE_SIZE=1024 \
+  -e MYSEKAI_ICON_SIZE=36 \
+  -e MYSEKAI_COUNT_FONT_SIZE=18 \
+  -e MYSEKAI_ICON_SPREAD=22 \
+  -e MYSEKAI_IGNORE_BASE_MATERIALS=1 \
+  -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
+  -e NOTIFICATION_HIT_RETENTION=100 \
+  -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
+  -e TZ=Asia/Shanghai \
+  -v /opt/pjsk-captures:/data \
+  -v /opt/pjsk-config:/data/config \
+  -v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts \
+  pjsk-receiver:dev3939
+```
+
+Notes:
+- If you changed the `Dockerfile`, Python dependencies, or system packages, you still need to rebuild the image.
+- If you only changed runtime scripts such as `render_mysekai_map.py` or `import http.py`, the mounted-script flow above is enough.
 
 Quick checks after start:
 
@@ -93,7 +148,7 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'python /app/dockerScripts/render_
 - plugin query render trigger: any available full mysekai packet can be rendered (not limited by diamond hit)
 - render output: one image per hit site; only hit sites are generated/sent
 - render tuning:
-  - `MYSEKAI_MAP_IMAGE_SIZE`: final output size
+  - `MYSEKAI_MAP_IMAGE_SIZE`: target output width (single-site output keeps original `16:9` aspect ratio)
   - `MYSEKAI_ICON_SIZE`: icon size on map
   - `MYSEKAI_COUNT_FONT_SIZE`: quantity text size
   - `MYSEKAI_ICON_SPREAD`: spread radius for multi-resource points

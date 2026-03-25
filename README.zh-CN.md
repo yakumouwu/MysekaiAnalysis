@@ -66,11 +66,13 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -v /opt/pjsk-captures:/data \
   -v /opt/pjsk-config:/data/config \
+  -v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts \
   pjsk-receiver:latest
 ```
 
 可选：
 - 将 `mysekai_resource_map.json` 放到配置目录，以提升图标映射准确性。
+- 推荐把 `dockerScripts/` 宿主机目录挂载到容器 `/app/dockerScripts`，这样后续如果只改运行脚本，就不需要重新构建镜像。
 
 数据输出：
 - 原始包：`/data/raw_api/...`
@@ -82,6 +84,7 @@ docker run -d \
 - 自动通知去重与渲染规则：每用户每时间窗口仅首次钻石命中触发（`05:00-17:00`、`17:00-次日05:00`）
 - 插件查询渲染规则：只要存在可用全量 mysekai 包，即可渲染（不要求钻石命中）
 - 渲染投影规则：固定零点模式（地图中心 = 世界坐标 `(0,0)`），跨包一致性依赖固定世界尺度参数
+- 单图渲染现已保持底图原始比例（`16:9`），`MYSEKAI_MAP_IMAGE_SIZE` 表示输出目标宽度
 - 同点位普通材料忽略（默认开启）：`MYSEKAI_IGNORE_BASE_MATERIALS=1`
   - 同点位有 `id=1` 且存在 `id=2..5` 时隐藏 `id=1`
   - 同点位有 `id=6` 且存在 `id=7..12` 时隐藏 `id=6`

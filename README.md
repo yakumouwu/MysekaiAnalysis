@@ -66,11 +66,13 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -v /opt/pjsk-captures:/data \
   -v /opt/pjsk-config:/data/config \
+  -v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts \
   pjsk-receiver:latest
 ```
 
 Optional:
 - place `mysekai_resource_map.json` in the proper config path to improve icon mapping accuracy
+- recommended: bind-mount host `dockerScripts/` to container `/app/dockerScripts` so script-only updates do not require rebuilding the image
 
 Data output:
 - raw payloads: `/data/raw_api/...`
@@ -82,6 +84,7 @@ Data output:
 - automatic notification dedup/render rule: per user, only the first diamond hit in each window triggers render/push (`05:00-17:00` and `17:00-next 05:00`)
 - plugin query render rule: with an available full mysekai packet, map rendering is allowed even without diamond hits
 - renderer projection rule: fixed-origin mode is used (map center = world `(0,0)`); lock `SITE<id>_WORLD_HALF_X/Z` for stable cross-packet alignment
+- single-site render output now preserves the source map aspect ratio (`16:9`), and `MYSEKAI_MAP_IMAGE_SIZE` is treated as target output width
 - same-coordinate base material ignore (enabled by default): `MYSEKAI_IGNORE_BASE_MATERIALS=1`
   - hide `id=1` when any `id=2..5` exists at the same coordinate
   - hide `id=6` when any `id=7..12` exists at the same coordinate

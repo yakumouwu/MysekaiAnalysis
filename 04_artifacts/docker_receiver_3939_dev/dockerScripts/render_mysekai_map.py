@@ -271,6 +271,13 @@ def _filter_unmapped_record_entries(entries, icons):
     return filtered
 
 
+def _resize_to_target_width(img, target_width):
+    w, h = img.size
+    out_w = max(1, int(target_width))
+    out_h = max(1, int(round(out_w * (h / float(w)))))
+    return img.resize((out_w, out_h), Image.LANCZOS)
+
+
 def _render_site(points_by_site, site_id, assets_dir, target_size):
     coords = points_by_site.get(site_id, {})
     if not coords:
@@ -386,8 +393,8 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
                     draw.text((tx + dx, ty + dy), text, fill=(0, 0, 0), font=font_count)
                 draw.text((tx, ty), text, fill=(255, 255, 255), font=font_count)
 
-    # Keep full-map output so alerts always show complete site context.
-    panel = img.resize((int(target_size), int(target_size)), Image.LANCZOS)
+    # Keep source map aspect ratio instead of forcing square output.
+    panel = _resize_to_target_width(img, target_size)
     return panel, "ok"
 
 
@@ -422,7 +429,8 @@ def render_mysekai_map_image(json_path, out_path, assets_dir):
     if not rendered:
         return False, "no_site_image"
 
-    grid = Image.new("RGBA", (target * 2, target * 2 + 48), (18, 22, 30, 255))
+    panel_h = next(iter(rendered.values())).height
+    grid = Image.new("RGBA", (target * 2, panel_h * 2 + 48), (18, 22, 30, 255))
     title = ImageDraw.Draw(grid)
     title.text(
         (16, 10), "MySekai Resource Map", fill=(240, 240, 245), font=_get_font(20)
@@ -430,8 +438,8 @@ def render_mysekai_map_image(json_path, out_path, assets_dir):
     panel_pos = {
         5: (0, 48),
         7: (target, 48),
-        6: (0, target + 48),
-        8: (target, target + 48),
+        6: (0, panel_h + 48),
+        8: (target, panel_h + 48),
     }
     for sid, pos in panel_pos.items():
         if sid in rendered:

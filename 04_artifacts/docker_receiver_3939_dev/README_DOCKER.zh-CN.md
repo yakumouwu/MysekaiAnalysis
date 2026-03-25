@@ -2,6 +2,7 @@
 [English](./README_DOCKER.md) | [Project README](../../README.md) | [项目中文总览](../../README.zh-CN.md)
 
 运行脚本位于 `dockerScripts/`，构建镜像时会复制到容器内 `/app/dockerScripts`。
+推荐部署方式：同时把宿主机脚本目录挂载到容器 `/app/dockerScripts`。这样后续只需要替换宿主机脚本并删除旧容器、重建新容器，不需要每次重新构建镜像。
 
 ## 构建镜像
 
@@ -51,10 +52,64 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -v /opt/pjsk-captures:/data \
   -v /opt/pjsk-config:/data/config \
+  -v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts \
   pjsk-receiver:latest
 ```
 
-说明：查询渲染已改为固定零点投影（地图中心为世界坐标 `(0,0)`）。当前代码内 4 张地图都已固化一组默认参数；如需再调，可继续用 `SITE<id>_*_DELTA` 覆盖。
+说明：查询渲染已改为固定零点投影（地图中心为世界坐标 `(0,0)`）。单图输出保持底图原始比例（`16:9`），`MYSEKAI_MAP_IMAGE_SIZE` 表示输出宽度。当前代码内 4 张地图都已固化一组默认参数；如需再调，可继续用 `SITE<id>_*_DELTA` 覆盖。
+
+## 推荐更新流程（无需重建镜像）
+
+前提：
+- 镜像内 Python 依赖与基础环境没有变化
+- 你只修改了 `dockerScripts/` 下的脚本
+- 容器启动时已挂载：`-v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts`
+
+服务器示例流程：
+
+```bash
+cd /opt/pjsk-receiver-3939-dev
+docker rm -f pjsk-receiver-dev
+docker run -d \
+  --name pjsk-receiver-dev \
+  --network langbot-network \
+  --restart=always \
+  --log-driver=json-file \
+  --log-opt max-size=20m \
+  --log-opt max-file=5 \
+  -p 3939:3939 \
+  -e PUBLIC_HOST=39.97.43.115 \
+  -e RECEIVER_PORT=3939 \
+  -e API_REGION=cn \
+  -e OUTPUT_ROOT=/data \
+  -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
+  -e RETENTION_COUNT=25 \
+  -e BOT_PUSH_ENABLED=1 \
+  -e BOT_PUSH_URL=http://napcat:3000 \
+  -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
+  -e BOT_PUSH_MODE=group \
+  -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
+  -e BOT_PUSH_RETRY=3 \
+  -e BOT_MESSAGE_MODE=text+image \
+  -e PLUGIN_QUERY_IMAGE_RETENTION=25 \
+  -e MYSEKAI_MAP_IMAGE_SIZE=1024 \
+  -e MYSEKAI_ICON_SIZE=36 \
+  -e MYSEKAI_COUNT_FONT_SIZE=18 \
+  -e MYSEKAI_ICON_SPREAD=22 \
+  -e MYSEKAI_IGNORE_BASE_MATERIALS=1 \
+  -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
+  -e NOTIFICATION_HIT_RETENTION=100 \
+  -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
+  -e TZ=Asia/Shanghai \
+  -v /opt/pjsk-captures:/data \
+  -v /opt/pjsk-config:/data/config \
+  -v /opt/pjsk-receiver-3939-dev/dockerScripts:/app/dockerScripts \
+  pjsk-receiver:dev3939
+```
+
+说明：
+- 如果修改了 `Dockerfile`、Python 依赖、系统包，仍然需要重新构建镜像
+- 如果只改了 `render_mysekai_map.py`、`import http.py` 等运行脚本，上述方式即可生效
 
 启动后快速检查：
 
@@ -93,7 +148,7 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'python /app/dockerScripts/render_
 - 插件查询渲染触发条件：有可用全量 mysekai 包即可渲染
 - 渲染输出：按命中地图分别输出多张图，仅生成/发送命中地图
 - 渲染参数：
-  - `MYSEKAI_MAP_IMAGE_SIZE`：最终图片尺寸
+  - `MYSEKAI_MAP_IMAGE_SIZE`：输出目标宽度（单图保持原始 `16:9` 比例）
   - `MYSEKAI_ICON_SIZE`：图标尺寸
   - `MYSEKAI_COUNT_FONT_SIZE`：数量文字尺寸
   - `MYSEKAI_ICON_SPREAD`：同点多资源图标扩散半径
