@@ -11,30 +11,33 @@ SITE_CONFIG = {
         "name": "Map 1",
         "bg": "grassland.png",
         "transform": "zx_neg",
-        "scale_add": (8.5, 8.5),
-        "offset_add": (30.0, 0.0),
+        "world_bounds": (-30.0, 29.0, -23.0, 75.0),
+        "scale_add": (25.5, 25.5),
+        "offset_add": (0.0, -90.0),
     },
-    # Beach map: lift all overlays by ~12.5% of 1080p background height (~135px).
     6: {
         "name": "Map 2",
         "bg": "beach.png",
         "transform": "x_negz",
-        "scale_add": (4.6, 4.2),
-        "offset_add": (-70.0, -50.0),
+        "world_bounds": (-30.0, 29.0, -20.0, 68.0),
+        "scale_add": (16.6, 16.2),
+        "offset_add": (20.0, 120.0),
     },
     7: {
         "name": "Map 3",
         "bg": "flowergarden.png",
         "transform": "zx_neg",
-        "scale_add": (5.0, 3.0),
-        "offset_add": (55.0, -70.0),
+        "world_bounds": (-30.0, 29.0, -28.0, 75.0),
+        "scale_add": (19.0, 19.0),
+        "offset_add": (-60.0, 20.0),
     },
     8: {
         "name": "Map 4",
         "bg": "memorialplace.png",
         "transform": "x_negz",
-        "scale_add": (3.0, 0.0),
-        "offset_add": (-185.0, 35.0),
+        "world_bounds": (-30.0, 29.0, -29.0, 70.0),
+        "scale_add": (16.6, 16.2),
+        "offset_add": (20.0, -120.0),
     },
 }
 
@@ -82,7 +85,6 @@ ASSET_ICON_TO_FILE = {
 FALLBACK_ICON_MAP = {
     ("mysekai_material", 12): "Diamond.png",
     ("mysekai_item", 7): "Blueprint_Scrap.png",
-    ("mysekai_music_record", 79): "Extra_Record.png",
 }
 
 
@@ -104,6 +106,13 @@ def _env_int(name, default):
         return int(v)
     except Exception:
         return int(default)
+
+
+def _env_bool(name, default):
+    v = os.environ.get(name)
+    if v is None or v == "":
+        return bool(default)
+    return str(v).strip().lower() in ("1", "true", "yes", "on")
 
 
 def _get_font(size):
@@ -232,6 +241,43 @@ def _extract_points(mysekai_json):
     return points_by_site
 
 
+def _filter_same_coord_base_materials(stat):
+    """
+    Hide base materials at the same coordinate when upgraded variants exist.
+    Rules (mysekai_material only):
+    - if id=1 and any id in [2,5] coexist, hide id=1
+    - if id=6 and any id in [7,12] coexist, hide id=6
+    """
+    if not _env_bool("MYSEKAI_IGNORE_BASE_MATERIALS", True):
+        return stat
+
+    material_keys = {rid for (rtype, rid) in stat if rtype == "mysekai_material"}
+
+    if 1 in material_keys and any(rid in material_keys for rid in range(2, 6)):
+        stat.pop(("mysekai_material", 1), None)
+
+    if 6 in material_keys and any(rid in material_keys for rid in range(7, 13)):
+        stat.pop(("mysekai_material", 6), None)
+
+    return stat
+
+
+def _filter_unmapped_record_entries(entries, icons):
+    filtered = []
+    for key, qty in entries:
+        if icons.get(key) is None and key[0] == "mysekai_music_record":
+            continue
+        filtered.append((key, qty))
+    return filtered
+
+
+def _resize_to_target_width(img, target_width):
+    w, h = img.size
+    out_w = max(1, int(target_width))
+    out_h = max(1, int(round(out_w * (h / float(w)))))
+    return img.resize((out_w, out_h), Image.LANCZOS)
+
+
 def _render_site(points_by_site, site_id, assets_dir, target_size):
     coords = points_by_site.get(site_id, {})
     if not coords:
@@ -257,29 +303,32 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
     draw = ImageDraw.Draw(img)
     bg_w, bg_h = img.size
 
-    all_x = [p[0] for p in coords]
-    all_z = [p[1] for p in coords]
-    min_x, max_x = min(all_x) - 1.0, max(all_x) + 1.0
-    min_z, max_z = min(all_z) - 1.0, max(all_z) + 1.0
-    range_x = max(1.0, max_x - min_x + 1.0)
-    range_z = max(1.0, max_z - min_z + 1.0)
-
+    min_x, max_x, min_z, max_z = cfg.get("world_bounds", (-30.0, 30.0, -30.0, 30.0))
+    half_world_x_default = max(abs(float(min_x)), abs(float(max_x)))
+    half_world_z_default = max(abs(float(min_z)), abs(float(max_z)))
+    half_world_x = max(
+        1.0, _env_float(f"SITE{site_id}_WORLD_HALF_X", half_world_x_default)
+    )
+    half_world_z = max(
+        1.0, _env_float(f"SITE{site_id}_WORLD_HALF_Z", half_world_z_default)
+    )
+    world_span_x = (half_world_x * 2.0) + 1.0
+    world_span_z = (half_world_z * 2.0) + 1.0
     usable_w = bg_w * 0.70
     usable_h = bg_h * 0.70
-    base_scale = min(usable_w / range_x, usable_h / range_z)
+    base_scale = min(usable_w / world_span_x, usable_h / world_span_z)
     scale_x = base_scale + cfg["scale_add"][0]
     scale_z = base_scale + cfg["scale_add"][1]
     scale_x += _env_float(f"SITE{site_id}_SCALE_X_DELTA", 0.0)
     scale_z += _env_float(f"SITE{site_id}_SCALE_Z_DELTA", 0.0)
-
-    offset_x = (bg_w - range_x * scale_x) / 2.0 + cfg["offset_add"][0]
-    offset_z = (bg_h - range_z * scale_z) / 2.0 + cfg["offset_add"][1]
+    offset_x = (bg_w / 2.0) + cfg["offset_add"][0]
+    offset_z = (bg_h / 2.0) + cfg["offset_add"][1]
     offset_x += _env_float(f"SITE{site_id}_OFFSET_X_DELTA", 0.0)
     offset_z += _env_float(f"SITE{site_id}_OFFSET_Z_DELTA", 0.0)
 
     def coord_to_px(cx, cz):
-        px = offset_x + (cx - min_x) * scale_x + scale_x / 2.0
-        pz = offset_z + (cz - min_z) * scale_z + scale_z / 2.0
+        px = offset_x + (cx * scale_x)
+        pz = offset_z + (cz * scale_z)
         return int(px), int(pz)
 
     item_pixels = []
@@ -291,7 +340,14 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
         for d in drops:
             key = (d["resourceType"], d["resourceId"])
             stat[key] = stat.get(key, 0) + int(d["qty"])
-        entries = sorted(stat.items(), key=lambda t: t[1], reverse=True)
+        stat = _filter_same_coord_base_materials(stat)
+        # Keep icon layout deterministic for the same coordinate:
+        # sort by resource identity instead of current quantity.
+        entries = sorted(stat.items(), key=lambda t: (t[0][0], t[0][1]))
+        entries = _filter_unmapped_record_entries(entries, icons)
+
+        if not entries:
+            continue
 
         if len(entries) == 1:
             main_key, main_qty = entries[0]
@@ -309,7 +365,7 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
                 )
             text = str(main_qty)
             tx = px + (icon_size // 2) - 2
-            ty = py + (icon_size // 3)
+            ty = py + (icon_size // 6)
             for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                 draw.text((tx + dx, ty + dy), text, fill=(0, 0, 0), font=font_count)
             draw.text((tx, ty), text, fill=(255, 255, 255), font=font_count)
@@ -332,13 +388,13 @@ def _render_site(points_by_site, site_id, assets_dir, target_size):
                     )
                 text = str(qty)
                 tx = ix + (icon_size // 2) - 2
-                ty = iy + (icon_size // 3)
+                ty = iy + (icon_size // 6)
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     draw.text((tx + dx, ty + dy), text, fill=(0, 0, 0), font=font_count)
                 draw.text((tx, ty), text, fill=(255, 255, 255), font=font_count)
 
-    # Keep full-map output so alerts always show complete site context.
-    panel = img.resize((int(target_size), int(target_size)), Image.LANCZOS)
+    # Keep source map aspect ratio instead of forcing square output.
+    panel = _resize_to_target_width(img, target_size)
     return panel, "ok"
 
 
@@ -373,7 +429,8 @@ def render_mysekai_map_image(json_path, out_path, assets_dir):
     if not rendered:
         return False, "no_site_image"
 
-    grid = Image.new("RGBA", (target * 2, target * 2 + 48), (18, 22, 30, 255))
+    panel_h = next(iter(rendered.values())).height
+    grid = Image.new("RGBA", (target * 2, panel_h * 2 + 48), (18, 22, 30, 255))
     title = ImageDraw.Draw(grid)
     title.text(
         (16, 10), "MySekai Resource Map", fill=(240, 240, 245), font=_get_font(20)
@@ -381,8 +438,8 @@ def render_mysekai_map_image(json_path, out_path, assets_dir):
     panel_pos = {
         5: (0, 48),
         7: (target, 48),
-        6: (0, target + 48),
-        8: (target, target + 48),
+        6: (0, panel_h + 48),
+        8: (target, panel_h + 48),
     }
     for sid, pos in panel_pos.items():
         if sid in rendered:
