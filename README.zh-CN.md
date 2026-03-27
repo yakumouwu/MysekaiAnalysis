@@ -70,10 +70,6 @@ docker run -d \
   pjsk-receiver:latest
 ```
 
-可选：
-- 推荐把 `dockerScripts/` 宿主机目录挂载到容器 `/app/dockerScripts`，这样后续如果只改运行脚本，就不需要重新构建镜像。
-- 当前代码回退值与项目部署约定均默认使用 `BOT_PUSH_MODE=group`。
-
 数据输出：
 - 原始包：`/data/raw_api/...`
 - 解密 JSON：`/data/decoded_api/...`
@@ -84,13 +80,13 @@ docker run -d \
 - 自动通知去重与渲染规则：每用户每时间窗口仅首次钻石命中触发（`05:00-17:00`、`17:00-次日05:00`）
 - 插件查询渲染规则：只要存在可用全量 mysekai 包，即可渲染（不要求钻石命中）
 - 渲染投影规则：固定零点模式（地图中心 = 世界坐标 `(0,0)`），跨包一致性依赖固定世界尺度参数
-- 单图渲染现已保持底图原始比例（`16:9`），`MYSEKAI_MAP_IMAGE_SIZE` 表示输出目标宽度
+- 单图渲染默认保持底图原始比例（`16:9`），`MYSEKAI_MAP_IMAGE_SIZE` 表示输出目标宽度
 - 同点位普通材料忽略（默认开启）：`MYSEKAI_IGNORE_BASE_MATERIALS=1`
 
 ## 关键运行参数
 
 推送与通知：
-- `BOT_PUSH_MODE`：当前代码回退值为 `group`，项目部署也默认按群推送使用；如需私聊推送可显式设为 `private`
+- `BOT_PUSH_MODE`：当前代码回退值为 `group`，项目部署默认按群推送使用；如需私聊推送可显式设为 `private`
 - `BOT_MESSAGE_MODE`：支持 `text`、`image`、`text+image`；当前默认策略是 `text+image`，图片发送失败时会回退到纯文本
 - `BOT_PUSH_RETRY`：NapCat 推送重试次数
 - `NOTIFICATION_WINDOW_CACHE_HOURS`：窗口去重缓存保留时长
@@ -160,25 +156,7 @@ PY
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-## 本地自动提交任务
-
-- 脚本：
-  - `auto_commit.bat`
-  - `auto_commit.ps1`
-- 日志：
-  - `logs/auto_commit.log`
-  - `logs/auto_commit_runner.log`
-- 网络抖动时脚本会自动重试 `git pull --rebase` 和 `git push`。
-
-当前覆盖范围：
-- API 路由识别（`extract_api_type`）
-- 钻石命中提取（`find_diamond_hits`，含混合数据场景）
-- 窗口与去重缓存逻辑（`get_refresh_window_id`、`filter_hits_for_current_window`、`cleanup_window_dedup_cache`）
-- 通知推送逻辑（`send_bot_message`、`push_text_with_optional_image`，含重试/回退/模式分支）
-- 通知流程轻集成（`process_mysekai_notification` 的跳过与命中分支）
-- HTTP 接口（`GET /healthz`、`GET /upload.js`、`GET /api/plugin/mysekai/map`、`GET /api/plugin/mysekai/file`、`GET /`）
-
-## LangBot 占位插件（上传自测）
+## LangBot 插件
 
 - 源码目录：`04_artifacts/langbot_plugin_placeholder/MysekaiQueryPlaceholder`
 - 上传包：`04_artifacts/langbot_plugin_placeholder/dist/MysekaiQueryPlaceholder-0.3.0.lbpkg`
@@ -189,18 +167,11 @@ python -m unittest discover -s tests -p "test_*.py" -v
   - `mysk whoami`
   - `mysk map`
   - `mysk map site <id>`
-- 非法 `mysk map` 参数会直接提示用法（不会静默回退到全图查询）
+- 非法 `mysk map` 参数会直接提示用法
 - 后端相关配置：
   - `backend_base_url`
   - `backend_map_api_path`
   - `backend_api_key`
-
-当前已验证行为：
-- `mysk bind <mysekai_user_id>`：按 QQ 号保存绑定（`QQ user_id -> mysekai_user_id`）
-- `mysk map`：查询已绑定用户的最新可用全量 mysekai 包并渲染
-- `mysk map site <id>`：按站点单图返回（`id` 取值 `5,6,7,8`）
-- 未绑定查询返回：`not bound, use: mysk bind <mysekai_user_id>`
-- 无数据查询返回：`map query failed: no full mysekai packet found for user`
 
 ## 端到端检查清单（Capture -> Decode -> NapCat Push）
 

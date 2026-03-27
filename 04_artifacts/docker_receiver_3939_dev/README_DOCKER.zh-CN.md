@@ -12,7 +12,6 @@ docker build -t pjsk-receiver:latest .
 注意：
 - Receiver 与 NapCat 必须在同一个 Docker 网络中：`docker network create <YOUR_DOCKER_NETWORK>`。
 - 文档中的 ID/Token 均为占位，请在实际部署时替换为你自己的参数。
-- `BOT_PUSH_MODE` 在代码中的回退值已为 `group`；不传该变量时会默认按群推送处理。
 
 ```bash
 docker run -d \
