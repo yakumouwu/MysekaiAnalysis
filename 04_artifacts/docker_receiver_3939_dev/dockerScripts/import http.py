@@ -606,6 +606,8 @@ def _build_public_image_url(file_name):
 
 
 class RequestHandler(http.server.SimpleHTTPRequestHandler):
+    timeout = 15
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
