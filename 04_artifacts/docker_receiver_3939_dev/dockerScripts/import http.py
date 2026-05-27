@@ -606,6 +606,8 @@ def _build_public_image_url(file_name):
 
 
 class RequestHandler(http.server.SimpleHTTPRequestHandler):
+    timeout = 15
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
@@ -843,7 +845,12 @@ if __name__ == "__main__":
         "File naming format: [api_type]_[user]_[timestamp]_[ms]_[pid]_[seq].bin"
     )
     try:
-        with socketserver.TCPServer(("", PORT), RequestHandler) as httpd:
+
+        class ThreadedServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+            daemon_threads = True
+            allow_reuse_address = True
+
+        with ThreadedServer(("", PORT), RequestHandler) as httpd:
             httpd.serve_forever()
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
