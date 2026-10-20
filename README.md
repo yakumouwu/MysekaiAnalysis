@@ -3,11 +3,13 @@
 
 ## Overview
 
+New: [SnowLuma + Koishi deployment](./04_artifacts/koishi_qqbot/README.md), with a Koishi Mysekai plugin replacing LangBot, the existing Python receiver, and ChatLuna ready for operator model configuration. Management access uses SSH forwarding. Notification and query renders share one render slot; OneBot action failures are checked even on HTTP 200.
+
 This repository provides local and Docker receivers for:
 - capturing API responses
 - decoding payloads
 - generating user profile card images
-- sending Mysekai diamond notifications via NapCat
+- sending Mysekai diamond notifications via OneBot (SnowLuma or NapCat)
 
 ## Local Script (Windows)
 
@@ -47,8 +49,8 @@ docker run -d \
   -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
   -e RETENTION_COUNT=25 \
   -e BOT_PUSH_ENABLED=1 \
-  -e BOT_PUSH_URL=http://napcat:3000 \
-  -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
+  -e BOT_PUSH_URL=http://snowluma:3000 \
+  -e BOT_TOKEN=<YOUR_ONEBOT_HTTP_TOKEN> \
   -e BOT_PUSH_MODE=<private_or_group> \
   -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
   -e NOTIFICATION_USER_LABEL=<YOUR_USER_LABEL> \
@@ -179,7 +181,7 @@ Run from repository root:
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-## LangBot Placeholder Plugin (Upload Smoke Test)
+## Legacy LangBot Placeholder Plugin (Upload Smoke Test)
 
 - Source directory: `04_artifacts/langbot_plugin_placeholder/MysekaiQueryPlaceholder`
 - Upload-ready package:
@@ -204,7 +206,7 @@ Validated behavior (current):
 - unbound query returns: `not bound, use: mysk bind <mysekai_user_id>`
 - no data query returns: `map query failed: no full mysekai packet found for user`
 
-## End-to-End Checklist (Capture -> Decode -> NapCat Push)
+## Legacy NapCat End-to-End Checklist
 
 ### 1) Server / Network
 

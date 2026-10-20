@@ -3,11 +3,13 @@
 
 ## 项目概览
 
+新增 [SnowLuma + Koishi 部署](./04_artifacts/koishi_qqbot/README.md)：Koishi Mysekai 插件替换 LangBot，保留 Python 接收器；ChatLuna 模型由用户配置。管理端口使用 SSH 转发，通知与查询共用一个渲染槽，并检查 HTTP 200 中的 OneBot 业务失败状态。
+
 本仓库提供本地版与 Docker 版接收器，用于：
 - 抓取 API 响应
 - 解密 payload
 - 生成用户信息卡图片
-- 通过 NapCat 推送 Mysekai 钻石通知
+- 通过 OneBot（SnowLuma 或 NapCat）推送 Mysekai 钻石通知
 
 ## 本地脚本（Windows）
 
@@ -47,8 +49,8 @@ docker run -d \
   -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
   -e RETENTION_COUNT=25 \
   -e BOT_PUSH_ENABLED=1 \
-  -e BOT_PUSH_URL=http://napcat:3000 \
-  -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
+  -e BOT_PUSH_URL=http://snowluma:3000 \
+  -e BOT_TOKEN=<YOUR_ONEBOT_HTTP_TOKEN> \
   -e BOT_PUSH_MODE=<private_or_group> \
   -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
   -e NOTIFICATION_USER_LABEL=<YOUR_USER_LABEL> \
@@ -177,7 +179,7 @@ PY
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-## LangBot 插件
+## 旧版 LangBot 插件（迁移后不使用）
 
 - 源码目录：`04_artifacts/langbot_plugin_placeholder/MysekaiQueryPlaceholder`
 - 上传包：`04_artifacts/langbot_plugin_placeholder/dist/MysekaiQueryPlaceholder-0.3.0.lbpkg`
@@ -194,7 +196,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
   - `backend_map_api_path`
   - `backend_api_key`
 
-## 端到端检查清单（Capture -> Decode -> NapCat Push）
+## 旧版 NapCat 端到端检查清单
 
 ### 1) 服务器 / 网络
 

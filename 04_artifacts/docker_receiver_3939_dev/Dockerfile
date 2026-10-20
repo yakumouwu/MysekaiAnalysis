@@ -17,6 +17,7 @@ ENV PUBLIC_HOST=127.0.0.1
 ENV OUTPUT_ROOT=/data
 ENV MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json
 ENV BOT_MESSAGE_MODE=text+image
+# BOT_PUSH_URL/BOT_TOKEN may target SnowLuma; render concurrency is bounded in code.
 ENV MYSEKAI_MAP_IMAGE_SIZE=1024
 ENV MYSEKAI_ICON_SIZE=36
 ENV MYSEKAI_COUNT_FONT_SIZE=18

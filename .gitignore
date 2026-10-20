@@ -37,5 +37,11 @@ reference/
 01_scripts/**/__pycache__/
 tests/**/__pycache__/
 04_artifacts/**/__pycache__/
+04_artifacts/**/node_modules/
+04_artifacts/koishi_qqbot/.env
+04_artifacts/koishi_qqbot/koishi-data/
+04_artifacts/koishi_qqbot/koishi-runtime/
+04_artifacts/koishi_qqbot/snowluma/
+04_artifacts/koishi_qqbot/*.tar.gz
 04_artifacts/**/*.tar
 .gitnexus

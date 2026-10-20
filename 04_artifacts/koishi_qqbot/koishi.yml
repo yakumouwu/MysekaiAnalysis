@@ -1,0 +1,32 @@
+prefix: ['', '/', '!']
+plugins:
+  http: {}
+  server:
+    host: 0.0.0.0
+    port: 5140
+  console: {}
+  auth:
+    admin:
+      enabled: true
+      username: admin
+      password: ${{ env.KOISHI_ADMIN_PASSWORD }}
+  config: {}
+  status: {}
+  logger: {}
+  help: {}
+  database-sqlite:
+    path: data/koishi.db
+  adapter-onebot:
+    protocol: ws
+    selfId: ${{ env.QQ_BOT_ID }}
+    endpoint: ws://snowluma:3001
+    token: ${{ env.ONEBOT_TOKEN }}
+  mysekai:
+    backendBaseUrl: http://pjsk-receiver-dev:3939
+    backendApiKey: ${{ env.PLUGIN_API_KEY }}
+    queryCooldownSeconds: 60
+    requestTimeoutSeconds: 45
+    maxBindings: 25
+  ~chatluna-storage-service: {}
+  ~chatluna: {}
+  ~chatluna-openai-like-adapter: {}
