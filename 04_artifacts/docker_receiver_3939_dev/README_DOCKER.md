@@ -1,4 +1,6 @@
 # Mysekai/Suite Receiver Docker (Port 3939)
+
+SnowLuma/Koishi deployment: see [new stack](../koishi_qqbot/README.md). Point `BOT_PUSH_URL` to the SnowLuma OneBot HTTP service and use its token. Keep capture mounts and dedup cache. Notification/query renders are serialized; OneBot business errors are checked independently of HTTP status. Dependencies remain unchanged.
 [中文](./README_DOCKER.zh-CN.md) | [Project README](../../README.md) | [项目中文总览](../../README.zh-CN.md)
 
 ## Build
@@ -10,7 +12,7 @@ docker build -t pjsk-receiver:latest .
 ## Run
 
 Notes:
-- Receiver and NapCat must be in the same Docker network: `docker network create <YOUR_DOCKER_NETWORK>`.
+- Receiver, Koishi and SnowLuma must share a Docker network: `docker network create <YOUR_DOCKER_NETWORK>`.
 - IDs and tokens below are placeholders. Replace them in your own environment.
 - Recommended: bind-mount host `dockerScripts/` to container `/app/dockerScripts`; for script-only updates, recreating the container is usually enough and rebuilding the image is unnecessary.
 
@@ -30,8 +32,8 @@ docker run -d \
   -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
   -e RETENTION_COUNT=25 \
   -e BOT_PUSH_ENABLED=1 \
-  -e BOT_PUSH_URL=http://napcat:3000 \
-  -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
+  -e BOT_PUSH_URL=http://snowluma:3000 \
+  -e BOT_TOKEN=<YOUR_ONEBOT_HTTP_TOKEN> \
   -e BOT_PUSH_MODE=<private_or_group> \
   -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
   -e NOTIFICATION_USER_LABEL=<YOUR_USER_LABEL> \
@@ -65,11 +67,10 @@ docker exec -it pjsk-receiver-dev python -m sssekai -h
 curl -sS http://127.0.0.1:3939/healthz
 ```
 
-Connectivity check from `langbot`:
+Connectivity check from `koishi`:
 
 ```bash
-docker exec -it langbot python -c "import urllib.request;print(urllib.request.urlopen('http://pjsk-receiver-dev:3939/healthz',timeout=5).read().decode())"
-docker exec -it langbot python -c "import urllib.request;print(urllib.request.urlopen('http://pjsk-receiver-dev:3939/api/plugin/mysekai/map?mysekai_user_id=<YOUR_MYSEKAI_USER_ID>&requester_qq=123456',timeout=20).read().decode())"
+docker exec koishi node -e "fetch('http://pjsk-receiver-dev:3939/healthz').then(r=>r.text()).then(console.log)"
 ```
 
 Render test (generic single-site):
@@ -117,7 +118,7 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'python /app/dockerScripts/render_
 - health endpoint: `GET /healthz`
 - plugin map query endpoint: `GET /api/plugin/mysekai/map`
 - plugin image file endpoint: `GET /api/plugin/mysekai/file?name=<file_name>`
-- `BOT_TOKEN` is the NapCat HTTP server token (Authorization Bearer token)
+- `BOT_TOKEN` is the configured OneBot HTTP server token (Authorization Bearer token)
 
 ## Notification And Render Rules
 

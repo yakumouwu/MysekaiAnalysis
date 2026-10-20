@@ -8,11 +8,13 @@ import shutil
 import socketserver
 import subprocess
 import sys
+import threading
 import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from itertools import count
+from functools import wraps
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -55,6 +57,16 @@ NOTIFICATION_WINDOW_CACHE_HOURS = int(
 
 REQUEST_COUNTER = count(1)
 NOTIFICATION_DEDUP_CACHE = {}
+RENDER_LOCK = threading.Lock()
+
+
+def serialized_render(func):
+    """Share one render slot between notifications and plugin queries."""
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        with RENDER_LOCK:
+            return func(*args, **kwargs)
+    return wrapped
 
 SITE_LABELS = {
     5: "Map 1 (grassland)",
@@ -237,6 +249,7 @@ def render_suite_card(json_path, decoded_dir):
     return None, (proc.stderr or proc.stdout or "render_failed").strip()
 
 
+@serialized_render
 def render_mysekai_site_maps(json_path, decoded_dir, site_ids):
     renderer = os.path.join(os.path.dirname(__file__), "render_mysekai_map.py")
     assets_dir = os.path.join(os.path.dirname(__file__), "mysekai_assets")
@@ -368,6 +381,13 @@ def send_bot_message(message):
         try:
             with urllib.request.urlopen(req, timeout=8) as resp:
                 body = resp.read().decode("utf-8", errors="replace")
+            result = json.loads(body)
+            if not isinstance(result, dict):
+                raise ValueError("invalid OneBot response")
+            if result.get("status") not in (None, "ok") or result.get("retcode", 0) != 0:
+                raise ValueError("OneBot action failed: retcode=%s" % result.get("retcode"))
+            if result.get("status") != "ok" and result.get("retcode") != 0 and result.get("ok") != 1:
+                raise ValueError("OneBot response has no success acknowledgement")
             if attempt > 1:
                 logger.info("Notification push succeeded at retry #%s", attempt)
             return True, body[:300]
@@ -556,6 +576,7 @@ def _find_latest_full_mysekai_json(mysekai_user_id):
     return None
 
 
+@serialized_render
 def _render_map_for_plugin_query(json_path, mysekai_user_id, site_ids):
     renderer = os.path.join(os.path.dirname(__file__), "render_mysekai_map.py")
     assets_dir = os.path.join(os.path.dirname(__file__), "mysekai_assets")

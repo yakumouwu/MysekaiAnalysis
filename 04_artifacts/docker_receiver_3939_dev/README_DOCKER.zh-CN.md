@@ -1,4 +1,6 @@
 # Mysekai/Suite Receiver Docker 指南（端口 3939）
+
+SnowLuma/Koishi 迁移见[新栈说明](../koishi_qqbot/README.md)。将 `BOT_PUSH_URL` 和令牌切换到 SnowLuma OneBot HTTP 服务，保留抓包挂载与去重缓存。通知和查询渲染串行执行，并检查独立于 HTTP 状态的 OneBot 业务错误。依赖版本不变。
 [English](./README_DOCKER.md) | [Project README](../../README.md) | [项目中文总览](../../README.zh-CN.md)
 
 ## 构建镜像
@@ -10,7 +12,7 @@ docker build -t pjsk-receiver:latest .
 ## 启动容器
 
 注意：
-- Receiver 与 NapCat 必须在同一个 Docker 网络中：`docker network create <YOUR_DOCKER_NETWORK>`。
+- Receiver、Koishi 与 SnowLuma 必须在同一个 Docker 网络中：`docker network create <YOUR_DOCKER_NETWORK>`。
 - 文档中的 ID/Token 均为占位，请在实际部署时替换为你自己的参数。
 - 推荐把宿主机 `dockerScripts/` 挂载到容器 `/app/dockerScripts`；如果只是脚本更新，通常只需要重建容器，无需重建镜像。
 
@@ -30,8 +32,8 @@ docker run -d \
   -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
   -e RETENTION_COUNT=25 \
   -e BOT_PUSH_ENABLED=1 \
-  -e BOT_PUSH_URL=http://napcat:3000 \
-  -e BOT_TOKEN=<YOUR_NAPCAT_HTTP_TOKEN> \
+  -e BOT_PUSH_URL=http://snowluma:3000 \
+  -e BOT_TOKEN=<YOUR_ONEBOT_HTTP_TOKEN> \
   -e BOT_PUSH_MODE=<private_or_group> \
   -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
   -e NOTIFICATION_USER_LABEL=<YOUR_USER_LABEL> \
@@ -65,11 +67,10 @@ docker exec -it pjsk-receiver-dev python -m sssekai -h
 curl -sS http://127.0.0.1:3939/healthz
 ```
 
-从 `langbot` 容器检查联通性（容器到容器）：
+从 `koishi` 容器检查联通性：
 
 ```bash
-docker exec -it langbot python -c "import urllib.request;print(urllib.request.urlopen('http://pjsk-receiver-dev:3939/healthz',timeout=5).read().decode())"
-docker exec -it langbot python -c "import urllib.request;print(urllib.request.urlopen('http://pjsk-receiver-dev:3939/api/plugin/mysekai/map?mysekai_user_id=<YOUR_MYSEKAI_USER_ID>&requester_qq=123456',timeout=20).read().decode())"
+docker exec koishi node -e "fetch('http://pjsk-receiver-dev:3939/healthz').then(r=>r.text()).then(console.log)"
 ```
 
 渲染测试（通用单图）：
@@ -112,7 +113,7 @@ docker exec -it pjsk-receiver-dev /bin/sh -lc 'python /app/dockerScripts/render_
 - 健康检查接口：`GET /healthz`
 - 插件地图查询接口：`GET /api/plugin/mysekai/map`
 - 插件图片文件接口：`GET /api/plugin/mysekai/file?name=<file_name>`
-- `BOT_TOKEN` 为 NapCat HTTP Server Token（Bearer Token）
+- `BOT_TOKEN` 为所用 OneBot HTTP Server 的令牌（Bearer Token）
 
 ## 通知与渲染规则
 
