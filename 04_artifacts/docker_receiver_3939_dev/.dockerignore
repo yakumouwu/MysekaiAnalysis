@@ -1,0 +1,12 @@
+# Only application source and public map assets enter the build context.
+**
+!Dockerfile
+!.dockerignore
+!dockerScripts/
+!dockerScripts/import http.py
+!dockerScripts/render_mysekai_map.py
+!dockerScripts/mysekai_assets/
+!dockerScripts/mysekai_assets/icon/
+!dockerScripts/mysekai_assets/icon/*.png
+!dockerScripts/mysekai_assets/map/
+!dockerScripts/mysekai_assets/map/*.png

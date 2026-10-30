@@ -164,8 +164,8 @@ class ReceiverLogicTests(unittest.TestCase):
             )
 
         self.assertIn(6, filtered_1)
-        self.assertIn(6, filtered_2)
-        self.assertEqual(filtered_2[6]["qty"], 2)
+        # The entire window is gated after its first hit, including new points.
+        self.assertEqual(filtered_2, {})
 
 
 class ReceiverMessageTests(unittest.TestCase):
