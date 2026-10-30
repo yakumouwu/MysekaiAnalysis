@@ -1,247 +1,97 @@
-# project-sekai
-[中文](./README.zh-CN.md) | [Docker English](./04_artifacts/docker_receiver_3939_dev/README_DOCKER.md) | [Docker 中文](./04_artifacts/docker_receiver_3939_dev/README_DOCKER.zh-CN.md)
+# MysekaiAnalysis
 
-## Overview
+为国服 Project SEKAI（《初音未来：缤纷舞台》）MySEKAI 建立的钻石透视辅助插件。解析游戏已下发的资源数据，在地图上标出钻石等采集物的位置，并提供地图查询和可选通知。
 
-New: [SnowLuma + Koishi deployment](./04_artifacts/koishi_qqbot/README.md), with a Koishi Mysekai plugin replacing LangBot, the existing Python receiver, and ChatLuna ready for operator model configuration. Management access uses SSH forwarding. Notification and query renders share one render slot; OneBot action failures are checked even on HTTP 200.
+## 工作流程
 
-This repository provides local and Docker receivers for:
-- capturing API responses
-- decoding payloads
-- generating user profile card images
-- sending Mysekai diamond notifications via OneBot (SnowLuma or NapCat)
-
-## Local Script (Windows)
-
-- Script path: `01_scripts/import http.py`
-- Default port: `8000`
-- Shadowrocket `script-path` example:
-  - `http://<your-local-ip>:8000/upload.js`
-
-## Docker Receiver (Dev)
-
-- Directory: `04_artifacts/docker_receiver_3939_dev`
-- Runtime scripts: `04_artifacts/docker_receiver_3939_dev/dockerScripts`
-- Default port: `3939`
-- Health check: `GET /healthz`
-
-Build:
-
-```bash
-docker build -t pjsk-receiver:latest .
+```text
+游戏的 mysekai 响应 → Shadowrocket 转发 → Python 接收与解密
+                                        ↓
+                           识别钻石 → 渲染地图 → 查询 / 可选通知
 ```
 
-Run (example):
+钻石对应 `resourceType=mysekai_material`、`resourceId=12`。分析结果来自当前捕获的数据；没有完整数据包时无法查询对应玩家的地图。
+
+## 功能
+
+- 支持初始空地（5）、心愿沙滩（6）、烂漫花田（7）、忘却之所（8）。
+- 在底图标注资源位置、种类和数量，支持重叠图标与站点坐标校准。
+- 自动处理只在完整包确认有钻石时渲染，且只生成包含钻石的地图；多张地图分别输出。
+- 按玩家在每天 `05:00–17:00`、`17:00–次日05:00` 两个窗口去重，同一窗口仅首次命中生成地图并触发通知。
+- 提供单图或全图查询接口；主动查询不要求包内有钻石，但必须已有该玩家的完整数据包。
+- 可选通过 OneBot HTTP 接口发送群聊或私聊通知，图片发送失败时回退为文字。
+- 提供独立的 [Koishi Mysekai 查询插件](./04_artifacts/koishi_plugin_mysekai/README.md)，用于账号绑定和 `mysk map` 查询。
+
+## 快速开始
+
+推荐使用 [接收器 Docker 说明](./04_artifacts/docker_receiver_3939_dev/README_DOCKER.md)。在仓库根目录执行：
 
 ```bash
-docker run -d \
-  --name pjsk-receiver-dev \
-  --network <YOUR_DOCKER_NETWORK> \
-  --restart=always \
-  --log-driver=json-file \
-  --log-opt max-size=20m \
-  --log-opt max-file=5 \
-  -p 3939:3939 \
-  -e PUBLIC_HOST=<YOUR_SERVER_PUBLIC_IP_OR_DOMAIN> \
-  -e RECEIVER_PORT=3939 \
-  -e API_REGION=cn \
-  -e OUTPUT_ROOT=/data \
-  -e MYSEKAI_RESOURCE_MAP_JSON=/data/config/mysekai_resource_map.json \
-  -e RETENTION_COUNT=25 \
-  -e BOT_PUSH_ENABLED=1 \
-  -e BOT_PUSH_URL=http://snowluma:3000 \
-  -e BOT_TOKEN=<YOUR_ONEBOT_HTTP_TOKEN> \
-  -e BOT_PUSH_MODE=<private_or_group> \
-  -e BOT_TARGET_ID=<YOUR_QQ_OR_GROUP_ID> \
-  -e NOTIFICATION_USER_LABEL=<YOUR_USER_LABEL> \
-  -e BOT_PUSH_RETRY=3 \
-  -e BOT_MESSAGE_MODE=text+image \
-  -e PLUGIN_API_KEY=<OPTIONAL_PLUGIN_API_KEY> \
-  -e PLUGIN_QUERY_IMAGE_RETENTION=25 \
-  -e MYSEKAI_MAP_IMAGE_SIZE=1024 \
-  -e MYSEKAI_ICON_SIZE=36 \
-  -e MYSEKAI_COUNT_FONT_SIZE=18 \
-  -e MYSEKAI_ICON_ENHANCE=1 \
-  -e MYSEKAI_ICON_SHARP_RADIUS=0.8 \
-  -e MYSEKAI_ICON_SHARP_PERCENT=130 \
-  -e MYSEKAI_ICON_SHARP_THRESHOLD=2 \
-  -e NOTIFICATION_WINDOW_CACHE_HOURS=72 \
-  -e NOTIFICATION_HIT_RETENTION=100 \
-  -e NOTIFICATION_EVENT_RETENTION_LINES=5000 \
-  -e TZ=Asia/Shanghai \
-  -v /opt/pjsk-captures:/data \
-  -v /opt/pjsk-config:/data/config \
-  -v /opt/docker_receiver_3939_dev/dockerScripts:/app/dockerScripts \
-  pjsk-receiver:latest
+cp .env.example .env
+# 编辑 .env：填写 PUBLIC_HOST；需要保护地图查询时设置 PLUGIN_API_KEY。
+docker build -t mysekai-receiver:latest ./04_artifacts/docker_receiver_3939_dev
+docker run -d --name mysekai-receiver --restart unless-stopped \
+  --env-file .env -p 3939:3939 \
+  -v mysekai-data:/data \
+  -v "$PWD/01_scripts/mysekai_resource_map.json:/data/config/mysekai_resource_map.json:ro" \
+  mysekai-receiver:latest
 ```
 
-Optional:
-- recommended: bind-mount host `dockerScripts/` to container `/app/dockerScripts` so script-only updates do not require rebuilding the image
-- when `dockerScripts/` is bind-mounted, script-only updates usually need only removing/recreating the container, not rebuilding the image
-- the code fallback and project deployment default both use `BOT_PUSH_MODE=group`
+`PUBLIC_HOST` 填接收器可达的主机名或 IP，不带协议或端口。示例默认关闭消息推送，先验证地图分析链路。
 
-Data output:
-- raw payloads: `/data/raw_api/...`
-- decoded JSON: `/data/decoded_api/...`
-- Mysekai maps: `/data/decoded_api/mysekai/maps/...`
-- logs: `/data/logs/receiver.log`
-- notification hits: `/data/notifications/hits/`
-- notification events: `/data/notifications/diamond_notifications.jsonl`
-- automatic notification dedup/render rule: per user, only the first diamond hit in each window triggers render/push (`05:00-17:00` and `17:00-next 05:00`)
-- plugin query render rule: with an available full mysekai packet, map rendering is allowed even without diamond hits
-- renderer projection rule: fixed-origin mode is used (map center = world `(0,0)`); lock `SITE<id>_WORLD_HALF_X/Z` for stable cross-packet alignment
-- single-site render output now preserves the source map aspect ratio (`16:9`), and `MYSEKAI_MAP_IMAGE_SIZE` is treated as target output width
-- same-coordinate conditional hide is built-in:
-  - hide `mysekai_material id=1` only when `id=2/3/4/5` exists at the same coordinate
-  - hide `mysekai_material id=6` only when `id=7/8/9/10/11` exists at the same coordinate
+### 配置采集端
 
-## Key Runtime Settings
+在 Shadowrocket 中匹配国服 `/api/user/<游戏ID>/mysekai` 的响应，启用响应体读取及适合二进制响应的处理模式，脚本地址填：
 
-Push and notification:
-- `BOT_PUSH_MODE`: current code fallback is `group`, and project deployment also defaults to group push; set `private` explicitly if needed
-- `BOT_MESSAGE_MODE`: `text`, `image`, or `text+image`; current default strategy is `text+image`, and image push failure falls back to text
-- `BOT_PUSH_RETRY`: retry count for NapCat push
-- `NOTIFICATION_WINDOW_CACHE_HOURS`: retention for the in-memory/on-disk dedup gate cache
-- `NOTIFICATION_HIT_RETENTION`: how many raw notification hit json files to keep
-- `NOTIFICATION_EVENT_RETENTION_LINES`: max retained lines in `diamond_notifications.jsonl`
-- automatic notification trigger: only diamond hits (`mysekai_material`, `id=12`) can trigger render/push; for each user, only the first hit inside `05:00-17:00` or `17:00-next 05:00` is allowed through
+```text
+http://<接收器地址>:3939/upload.js
+```
 
-Plugin query:
-- `PLUGIN_API_KEY`: optional auth key checked via `X-API-Key`
-- `PLUGIN_QUERY_IMAGE_RETENTION`: retained query render image count
-- query text policy:
-  - full query without `site_id`: empty text
-  - single-site query with `site_id`: localized Chinese map name only
-- successful responses also include `source_json`, which shows which decoded mysekai file was actually used for the render
+打开游戏并进入 MySEKAI，使游戏下发完整资源数据。接收器将保存原始包、解密 JSON，并在首次钻石命中时生成对应地图。`GET /healthz` 返回 `ok` 只代表接收器存活，不代表已经捕获游戏数据。
 
-Render sizing:
-- `MYSEKAI_MAP_IMAGE_SIZE`: target output width for single-site render
-- `MYSEKAI_ICON_SIZE`: icon size
-- `MYSEKAI_COUNT_FONT_SIZE`: count text size
-- icon clarity enhancement (enabled by default):
-  - `MYSEKAI_ICON_ENHANCE` (`1/0`)
-  - `MYSEKAI_ICON_SHARP_RADIUS` (default `0.8`)
-  - `MYSEKAI_ICON_SHARP_PERCENT` (default `130`)
-  - `MYSEKAI_ICON_SHARP_THRESHOLD` (default `2`)
-- overlap render rule:
-  - main icon stays centered and count badge is shown at top-left
-  - remaining icons are stacked in one small right-side column
-  - small/right-side icons are drawn in an upper layer and do not show count text
-- icon coverage:
-  - `material` uses its own icon set and is no longer treated as `mysekai_material`
-  - `mysekai_music_record` uses the shared `Extra_Record.png` icon
-  - unmapped `material` and unmapped `mysekai_fixture` are skipped instead of rendering placeholder dots
-  - extra icons can be dropped into `04_artifacts/docker_receiver_3939_dev/dockerScripts/mysekai_assets/icon/`
-  - file naming for direct pickup: `material_<id>.png`, `mysekai_fixture_<id>.png`, or `fixture_<id>.png`
+### 本地运行
 
-Per-site calibration:
-- `SITE<id>_WORLD_HALF_X` / `SITE<id>_WORLD_HALF_Z`: fixed world half-span used to project world coordinates into the map; this stabilizes cross-packet alignment
-- `SITE<id>_SCALE_X_DELTA` / `SITE<id>_SCALE_Z_DELTA`: fine-tune horizontal/vertical projection scale for one site
-- `SITE<id>_OFFSET_X_DELTA` / `SITE<id>_OFFSET_Z_DELTA`: fine-tune projected icon offset for one site
-- supported site ids: `5,6,7,8`
-
-## Virtual Diamond Notification Test
+需要 Python 3.11+。安装依赖后，设置 `API_REGION=cn`、`PUBLIC_HOST`、`OUTPUT_ROOT` 和 `MYSEKAI_RESOURCE_MAP_JSON`，再运行同一接收器：
 
 ```bash
-docker exec -i pjsk-receiver-dev python - <<'PY'
-import json, importlib.util, os
-test_path = "/opt/mysekai_test_id12.json"
-data = {
-  "updatedResources": {
-    "userMysekaiHarvestMaps": [
-      {
-        "mysekaiSiteId": 8,
-        "userMysekaiSiteHarvestResourceDrops": [
-          {"resourceType": "mysekai_material", "resourceId": 12, "quantity": 1}
-        ]
-      }
-    ]
-  }
-}
-with open(test_path, "w", encoding="utf-8") as f:
-    json.dump(data, f, ensure_ascii=False)
-spec = importlib.util.spec_from_file_location("receiver", "/app/dockerScripts/import http.py")
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-mod.setup_logging()
-mod.load_dedup_cache()
-mod.process_mysekai_notification(
-    test_path,
-    "https://mkcn-prod-public-60001-1.dailygn.com/api/user/<YOUR_USER_ID>/mysekai?isForceAllReloadOnlyMysekai=True"
-)
-print("triggered:", os.path.exists(test_path), test_path)
-PY
+python -m pip install -r requirements.txt
+API_REGION=cn PUBLIC_HOST=127.0.0.1 OUTPUT_ROOT=./02_captures \
+  MYSEKAI_RESOURCE_MAP_JSON=./01_scripts/mysekai_resource_map.json BOT_PUSH_ENABLED=0 \
+  python "04_artifacts/docker_receiver_3939_dev/dockerScripts/import http.py"
 ```
 
-## Unit Tests
+以上环境变量写法适用于 Bash；PowerShell 使用 `$env:变量名='值'` 分别设置。默认端口为 3939；其他设备采集时应将 `PUBLIC_HOST` 改为其可访问的地址。依赖 `sssekai` 固定为 **0.7.62**。
 
-Run from repository root:
+## 输出与查询
+
+相对于 `OUTPUT_ROOT`：
+
+| 路径 | 内容 |
+| --- | --- |
+| `raw_api/mysekai/` | 原始响应 |
+| `decoded_api/mysekai/` | 解密后的 JSON |
+| `decoded_api/mysekai/maps/` | 自动生成的地图 |
+| `notifications/` | 去重缓存、命中归档与通知事件 |
+| `logs/receiver.log` | 接收与分析日志 |
+
+地图查询使用 `GET /api/plugin/mysekai/map?mysekai_user_id=<游戏ID>`，增加 `site_id=6` 可只查询心愿沙滩。设置 `PLUGIN_API_KEY` 后携带请求头 `X-API-Key`。返回的 `images` 包含图片地址，`source_json` 标识本次使用的完整数据包。通过 `/api/plugin/mysekai/file?name=<文件名>` 下载查询图片。
+
+## 目录
+
+- `04_artifacts/docker_receiver_3939_dev/`：数据接收、解密、钻石识别、地图渲染及公开素材。
+- `04_artifacts/koishi_plugin_mysekai/`：可选的 Mysekai 地图查询插件。
+- `01_scripts/mysekai_resource_map.json`：资源名称与图标映射。
+- `tests/`：识别、去重、推送和 HTTP 接口测试。
+
+## 验证与排查
 
 ```bash
-python -m unittest discover -s tests -p "test_*.py" -v
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-## Legacy LangBot Placeholder Plugin (Upload Smoke Test)
+- 没有地图：确认采集到了完整 `mysekai` 包；自动处理还要求本窗口首次钻石命中。
+- 同窗口再次进入没有新图：这是去重规则；需要查看时可主动查询地图接口。
+- 标记位置不对：检查 `SITE<id>_WORLD_HALF_X/Z`、`SITE<id>_SCALE_X/Z_DELTA`、`SITE<id>_OFFSET_X/Z_DELTA`，详见接收器说明。
+- 查询返回无数据或鉴权失败：检查游戏 ID、完整包及 `X-API-Key`；图片地址不可达时检查 `PUBLIC_HOST` 和端口。
 
-- Source directory: `04_artifacts/langbot_plugin_placeholder/MysekaiQueryPlaceholder`
-- Upload-ready package:
-- `04_artifacts/langbot_plugin_placeholder/dist/MysekaiQueryPlaceholder-0.3.0.lbpkg`
-- Supported commands:
-- `mysk ping`
-- `mysk bind <mysekai_user_id>`
-- `mysk unbind`
-- `mysk whoami`
-- `mysk map`
-- `mysk map site <id>`
-- invalid `mysk map` args are rejected with usage hint (no silent fallback to full-map query)
-- Backend-related config keys:
-- `backend_base_url`
-- `backend_map_api_path`
-- `backend_api_key`
-
-Validated behavior (current):
-- `mysk bind <mysekai_user_id>` stores a per-QQ binding (`QQ user_id -> mysekai_user_id`)
-- `mysk map` queries the latest available full mysekai packet of the bound user
-- `mysk map site <id>` returns a single-site map (`id` in `5,6,7,8`)
-- unbound query returns: `not bound, use: mysk bind <mysekai_user_id>`
-- no data query returns: `map query failed: no full mysekai packet found for user`
-
-## Legacy NapCat End-to-End Checklist
-
-### 1) Server / Network
-
-- Open security group / firewall TCP `3939`
-- Prepare persistent directory (example: `/opt/pjsk-captures`)
-- Ensure receiver and NapCat are in the same Docker network
-
-### 2) Deploy Receiver
-
-- Build image from `04_artifacts/docker_receiver_3939_dev`
-- Runtime code is copied from `dockerScripts/` to `/app/dockerScripts`
-- If host `dockerScripts/` is bind-mounted to `/app/dockerScripts`, script-only updates usually require only recreating the container, not rebuilding the image
-- Run with at least:
-  - `-p 3939:3939`
-  - `-v /opt/pjsk-captures:/data`
-  - `-e PUBLIC_HOST=<YOUR_SERVER_PUBLIC_IP_OR_DOMAIN>`
-  - if notifications are enabled, configure `BOT_PUSH_*` and `BOT_TOKEN`
-
-### 3) Configure NapCat HTTP API
-
-- Enable one HTTP server endpoint in NapCat WebUI (typically `0.0.0.0:3000`)
-- Pass the HTTP token to receiver via `BOT_TOKEN`
-- Verify from receiver container:
-  - `http://napcat:3000` is reachable
-  - `401/403` usually means connectivity is fine but token is missing/wrong
-
-### 4) Configure Shadowrocket Module
-
-- `script-path`:
-  - `http://<PUBLIC_HOST>:3939/upload.js`
-- `pattern` should match required endpoints:
-  - `suite`
-  - `mysekai`:
-    - `/api/user/<uid>/mysekai?isForceAllReloadOnlyMysekai=True|False`
-
-## Icon Overrides
-- mysekai_material and mysekai_item now prefer local override files named after iconAssetbundleName, for example item_plant_4.png, before falling back to the shared built-in icon mapping.
-- mysekai_fixture now uses canonical local filenames such as mysekai_fixture_<id>.png or fixture_<id>.png.
+仓库只发布源码、公开地图素材与占位配置。个人抓包、账号绑定、日志、数据库、令牌和部署环境保存在本地，勿提交。

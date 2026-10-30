@@ -11,7 +11,7 @@ class MigrationReceiverTests(unittest.TestCase):
     def test_http_200_onebot_failure_is_retried_and_not_reported_success(self):
         receiver = load_receiver_module()
         receiver.BOT_PUSH_ENABLED = True
-        receiver.BOT_PUSH_URL = 'http://snowluma:3000'
+        receiver.BOT_PUSH_URL = 'http://onebot:3000'
         receiver.BOT_TARGET_ID = '123456'
         receiver.BOT_PUSH_MODE = 'group'
         receiver.BOT_PUSH_RETRY = 2

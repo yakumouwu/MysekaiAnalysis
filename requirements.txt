@@ -2,6 +2,8 @@
 # Core dependencies
 sssekai==0.7.62
 Pillow>=9.0.0
+certifi>=2026.10.19
+pip-system-certs==5.3; sys_platform == "win32"
 
 # Development dependencies (optional, install with: pip install -r requirements.txt -r requirements-dev.txt)
 # pytest>=7.0.0

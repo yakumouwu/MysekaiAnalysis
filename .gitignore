@@ -1,47 +1,59 @@
-# Ignore everything by default.
+# Publish only the Mysekai diamond-analysis source and public examples.
 *
+!/.gitignore
+!/README.md
+!/README.zh-CN.md
+!/requirements.txt
+!/.env.example
 
-# Keep this file itself.
-!.gitignore
-!README.md
-!README.zh-CN.md
-!batchAnalysis.bat
-!requirements.txt
-!.env.example
+!/01_scripts/
+/01_scripts/*
+!/01_scripts/mysekai_resource_map.json
+
+!/04_artifacts/
+/04_artifacts/*
+!/04_artifacts/docker_receiver_3939_dev/
+/04_artifacts/docker_receiver_3939_dev/*
+!/04_artifacts/docker_receiver_3939_dev/Dockerfile
+!/04_artifacts/docker_receiver_3939_dev/.dockerignore
+!/04_artifacts/docker_receiver_3939_dev/README_DOCKER.md
+!/04_artifacts/docker_receiver_3939_dev/README_DOCKER.zh-CN.md
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/
+/04_artifacts/docker_receiver_3939_dev/dockerScripts/*
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/import http.py
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/render_mysekai_map.py
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/mysekai_assets/
+/04_artifacts/docker_receiver_3939_dev/dockerScripts/mysekai_assets/*
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/mysekai_assets/icon/
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/mysekai_assets/map/
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/mysekai_assets/icon/*.png
+!/04_artifacts/docker_receiver_3939_dev/dockerScripts/mysekai_assets/map/*.png
+
+!/04_artifacts/koishi_plugin_mysekai/
+/04_artifacts/koishi_plugin_mysekai/*
+!/04_artifacts/koishi_plugin_mysekai/index.cjs
+!/04_artifacts/koishi_plugin_mysekai/package.json
+!/04_artifacts/koishi_plugin_mysekai/package-lock.json
+!/04_artifacts/koishi_plugin_mysekai/README.md
+!/04_artifacts/koishi_plugin_mysekai/tests/
+/04_artifacts/koishi_plugin_mysekai/tests/*
+!/04_artifacts/koishi_plugin_mysekai/tests/mysekai.test.cjs
+
+!/tests/
+/tests/*
+!/tests/test_receiver_unit.py
+!/tests/test_receiver_migration.py
+
+# Credentials and runtime output are never publication candidates.
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.sqlite*
+**/*.db*
+**/*.log
 AGENTS.md
-
-# Keep workflow files only.
-!.github/
-.github/*
-!.github/workflows/
-!.github/workflows/**
-
-# Keep these top-level project directories.
-!00_docs/
-!00_docs/**
-!01_scripts/
-!01_scripts/**
-!tests/
-!tests/**
-!04_artifacts/
-!04_artifacts/**
-
-# Keep TODO local only.
-00_docs/TODO.md
-00_docs/MCP_SKILL_PLAN.md
-
-# Local reference repository (not part of project source).
-reference/
-
-# Ignore generated artifacts inside whitelisted paths.
-01_scripts/**/__pycache__/
-tests/**/__pycache__/
-04_artifacts/**/__pycache__/
-04_artifacts/**/node_modules/
-04_artifacts/koishi_qqbot/.env
-04_artifacts/koishi_qqbot/koishi-data/
-04_artifacts/koishi_qqbot/koishi-runtime/
-04_artifacts/koishi_qqbot/snowluma/
-04_artifacts/koishi_qqbot/*.tar.gz
-04_artifacts/**/*.tar
-.gitnexus
+AGENTS.override.md

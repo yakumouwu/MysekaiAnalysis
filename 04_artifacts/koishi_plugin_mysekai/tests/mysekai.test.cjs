@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { parseMapQuery, internalImageUrl, migrationRecords } = require('../plugins/mysekai/index.cjs');
+const { parseMapQuery, internalImageUrl, migrationRecords } = require('../index.cjs');
 test('invalid map tails cannot trigger a four-map render', () => {
   for (const raw of ['site 4', 'site 9', 'site 6 extra', 'all extra', 'site -1']) assert.equal(parseMapQuery(raw).valid, false);
   assert.deepEqual(parseMapQuery('site 6'), { valid: true, siteId: '6' });
@@ -23,7 +23,7 @@ test('real Koishi/SQLite import, command dispatch and unbind survive a restart',
   const fs = require('node:fs/promises');
   const os = require('node:os');
   const path = require('node:path');
-  const plugin = require('../plugins/mysekai/index.cjs');
+  const plugin = require('../index.cjs');
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'koishi-mysekai-'));
   const importFile = path.join(dir, 'bindings.json');
   await fs.writeFile(importFile, JSON.stringify({ bindings: { '200000': '1234567890123456789012345' } }));

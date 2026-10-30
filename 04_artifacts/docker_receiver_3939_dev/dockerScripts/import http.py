@@ -233,22 +233,6 @@ def decrypt_bin(api_type, raw_path, decoded_dir):
     return None, (proc.stderr or proc.stdout or "decrypt_failed").strip()
 
 
-def render_suite_card(json_path, decoded_dir):
-    renderer = os.path.join(os.path.dirname(__file__), "render_suite_card.py")
-    if not os.path.exists(renderer):
-        return None, "renderer_not_found"
-    card_dir = os.path.join(decoded_dir, "cards")
-    os.makedirs(card_dir, exist_ok=True)
-    card_path = os.path.join(
-        card_dir, os.path.splitext(os.path.basename(json_path))[0] + ".png"
-    )
-    cmd = [sys.executable, renderer, json_path, card_path]
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    if proc.returncode == 0 and os.path.exists(card_path):
-        return card_path, "ok"
-    return None, (proc.stderr or proc.stdout or "render_failed").strip()
-
-
 @serialized_render
 def render_mysekai_site_maps(json_path, decoded_dir, site_ids):
     renderer = os.path.join(os.path.dirname(__file__), "render_mysekai_map.py")
@@ -813,15 +797,7 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
         if dstatus == "ok":
             prune_old_files(decoded_dir, f"{api_type}_*.json", RETENTION_COUNT)
             logger.info("Decoded JSON: %s", out_json)
-            if api_type == "suite":
-                card_path, cstatus = render_suite_card(out_json, decoded_dir)
-                if cstatus == "ok":
-                    card_dir = os.path.join(decoded_dir, "cards")
-                    prune_old_files(card_dir, "suite_*.png", RETENTION_COUNT)
-                    logger.info("Card Image: %s", card_path)
-                else:
-                    logger.warning("Card render failed: %s", cstatus)
-            elif api_type == "mysekai":
+            if api_type == "mysekai":
                 process_mysekai_notification(out_json, original_url)
         elif dstatus == "skipped":
             logger.info("Decode skipped (api_type unsupported)")
